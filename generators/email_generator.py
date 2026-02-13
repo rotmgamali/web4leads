@@ -230,6 +230,9 @@ class EmailGenerator:
             if lower_name == school_name:
                 return ""
                 
+        # Strip trailing punctuation (common in "Last, First" data)
+        name = name.rstrip(",. ")
+        
         return name
 
     def _get_time_greeting(self) -> str:

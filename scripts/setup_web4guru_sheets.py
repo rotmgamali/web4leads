@@ -63,6 +63,10 @@ def map_outscraper_row(row: Dict) -> Dict:
         first = parts[0]
         if len(parts) > 1 and not last:
             last = " ".join(parts[1:])
+    
+    # Strip trailing punctuation
+    if first: first = first.rstrip(",. ")
+    if last: last = last.rstrip(",. ")
             
     # Fallback: Parse from Email? (User might prefer "Hi there" over "Hi Office")
     # if not first and email:
