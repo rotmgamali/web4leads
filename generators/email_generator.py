@@ -149,9 +149,9 @@ class EmailGenerator:
                         logger.info(f"✅ [SCRAPE SUCCESS] Found {len(website_content)} characters for personalization.")
                     else:
                         logger.warning(f"⚠️ [SCRAPE WEAK] Only found {len(website_content) if website_content else 0} chars.")
-            except Exception as e:
-                logger.error(f"❌ [SCRAPE ERROR] Failed for {url}: {e}")
-                website_content = "No website content available."
+                except Exception as e:
+                    logger.error(f"❌ [SCRAPE ERROR] Failed for {url}: {e}")
+                    website_content = "No website content available."
         
         # Parse Custom Data
         custom_json = lead_data.get("custom_data", "{}")
