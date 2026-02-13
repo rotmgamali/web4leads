@@ -26,4 +26,4 @@ COPY . .
 RUN mkdir -p mailreef_automation/logs
 
 # The entrypoint will be overridden by docker-compose for different services
-CMD ["python", "mailreef_automation/main.py"]
+CMD ["python", "mailreef_automation/main.py", "--profile", "WEB4GURU_ACCOUNTANTS"]
