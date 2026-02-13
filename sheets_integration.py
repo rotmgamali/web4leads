@@ -123,21 +123,31 @@ class GoogleSheetsClient:
         creds = None
         
         # 1. Try to load from environment variable (Best for Railway/Cloud)
+        # 1. Try to load from environment variable (Best for Railway/Cloud)
         env_creds = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
-        if env_creds:
-            try:
+        env_creds_b64 = os.environ.get("GOOGLE_SHEETS_CREDENTIALS_B64")
+        
+        try:
+            creds_dict = None
+            if env_creds:
                 creds_dict = json.loads(env_creds)
+            elif env_creds_b64:
+                import base64
+                decoded = base64.b64decode(env_creds_b64).decode('utf-8')
+                creds_dict = json.loads(decoded)
+                
+            if creds_dict:
                 # Check if it's an authorized user token or a service account
                 if "refresh_token" in creds_dict:
                     creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
-                    logger.info("✓ Authenticated via GOOGLE_SHEETS_CREDENTIALS (User Token)")
+                    logger.info("✓ Authenticated via Environment Variable (User Token)")
                 else:
                     # Fallback to service account if that's what's provided
                     from google.oauth2 import service_account
                     creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-                    logger.info("✓ Authenticated via GOOGLE_SHEETS_CREDENTIALS (Service Account)")
-            except Exception as e:
-                logger.warning(f"Failed to load credentials from environment: {e}")
+                    logger.info("✓ Authenticated via Environment Variable (Service Account)")
+        except Exception as e:
+            logger.warning(f"Failed to load credentials from environment: {e}")
 
         # 2. Fallback to local token file (Best for local development)
         if not creds and TOKEN_FILE.exists():
