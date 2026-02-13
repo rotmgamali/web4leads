@@ -80,6 +80,10 @@ class ReplyWatcher:
         self.telegram = TelegramNotifier()
         self.generator = EmailGenerator() # Used for sentiment analysis
         
+        # --- CAMPAIGN INBOX ISOLATION ---
+        self.campaign_inboxes = set()
+        self._load_campaign_inboxes()
+        
         # --- LEAD-FIRST FILTERING ---
         # Cache all lead emails to ensure we NEVER filter out a real reply
         self.lead_emails = set()
@@ -89,6 +93,31 @@ class ReplyWatcher:
             'aol.com', 'msn.com', 'live.com', 'protonmail.com', 'me.com', 'comcast.net'
         }
         self._load_lead_emails()
+
+    def _load_campaign_inboxes(self):
+        """Identifies which inboxes belong to this specific campaign profile."""
+        try:
+            profile_config = automation_config.CAMPAIGN_PROFILES[self.profile_name]
+            indices = profile_config.get("inbox_indices")
+            
+            if not indices:
+                logger.warning(f"⚠️ [WATCHER] No inbox indices defined for {self.profile_name}. Monitoring ALL inboxes (Risk of leakage).")
+                return
+
+            all_inboxes = self.mailreef.get_inboxes()
+            start, end = indices
+            campaign_list = all_inboxes[start:end]
+            
+            for f in campaign_list:
+                email = f.get("email", "").lower().strip()
+                if email:
+                    self.campaign_inboxes.add(email)
+            
+            logger.info(f"📋 [WATCHER] Monitoring {len(self.campaign_inboxes)} dedicated inboxes for {self.profile_name}.")
+            # logger.debug(f"Monitored emails: {self.campaign_inboxes}")
+            
+        except Exception as e:
+            logger.error(f"❌ [WATCHER] Failed to load campaign inboxes: {e}")
 
     def _load_lead_emails(self):
         """Loads all lead emails and domains from the current profile's input sheet."""
@@ -202,6 +231,12 @@ class ReplyWatcher:
                     
                     # FILTER: Skip warmup emails
                     if self.is_warmup(from_email, subject):
+                        continue
+
+                    # FILTER: Skip if not for this campaign's inboxes
+                    to_email = msg.get("to")[0] if msg.get("to") else "unknown"
+                    if self.campaign_inboxes and to_email.lower().strip() not in self.campaign_inboxes:
+                        # logger.debug(f"⏭️ [SKIP] Message for {to_email} does not belong to {self.profile_name}")
                         continue
 
                     ts = msg.get("ts")
