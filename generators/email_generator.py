@@ -134,21 +134,21 @@ class EmailGenerator:
             else:
                 logger.info(f"🌍 [SCRAPE] Attempting to scrape {campaign_type} site: {url}...")
                 try:
-                if not url.startswith("http"):
-                    url = "https://" + url
-                
-                # Choose the right scraper
-                if campaign_type == "b2b" and b2b_scraper:
-                    website_content = b2b_scraper.scrape_b2b_text(url)
-                elif school_scraper:
-                    website_content = school_scraper.scrape_website_text(url)
-                else:
-                    website_content = "Scraper unavailable."
+                    if not url.startswith("http"):
+                        url = "https://" + url
+                    
+                    # Choose the right scraper
+                    if campaign_type == "b2b" and b2b_scraper:
+                        website_content = b2b_scraper.scrape_b2b_text(url)
+                    elif school_scraper:
+                        website_content = school_scraper.scrape_website_text(url)
+                    else:
+                        website_content = "Scraper unavailable."
 
-                if website_content and len(website_content) > 100:
-                    logger.info(f"✅ [SCRAPE SUCCESS] Found {len(website_content)} characters for personalization.")
-                else:
-                    logger.warning(f"⚠️ [SCRAPE WEAK] Only found {len(website_content) if website_content else 0} chars.")
+                    if website_content and len(website_content) > 100:
+                        logger.info(f"✅ [SCRAPE SUCCESS] Found {len(website_content)} characters for personalization.")
+                    else:
+                        logger.warning(f"⚠️ [SCRAPE WEAK] Only found {len(website_content) if website_content else 0} chars.")
             except Exception as e:
                 logger.error(f"❌ [SCRAPE ERROR] Failed for {url}: {e}")
                 website_content = "No website content available."
