@@ -364,7 +364,7 @@ class EmailScheduler:
                 })
             except Exception as e:
                 # Log failure
-                logger.error(f"❌ [SEND FAILURE] Failed to send to {prospect.get('email')}: {e}")
+                self.logger.error(f"❌ [SEND FAILURE] Failed to send to {prospect.get('email')}: {e}")
                 # Optional: Mark as failed in sheet?
                 # self.sheets.update_lead_status(prospect["email"], "failed")
                 
@@ -456,13 +456,13 @@ class EmailScheduler:
         slot_jobs.sort(key=lambda x: x.next_run_time)
         
         if not slot_jobs:
-            logger.info("📅 No upcoming send slots found in queue.")
+            self.logger.info("📅 No upcoming send slots found in queue.")
             return
 
-        logger.info(f"📅 UPCOMING SENDS (Next {min(len(slot_jobs), limit)}):")
+        self.logger.info(f"📅 UPCOMING SENDS (Next {min(len(slot_jobs), limit)}):")
         for i, job in enumerate(slot_jobs[:limit]):
             run_time = job.next_run_time.strftime("%I:%M:%S %p %Z")
             # Extract inbox from ID (format: slot_EMAIL_TIMESTAMP_RANDOM)
             parts = job.id.split('_')
             inbox = parts[1] if len(parts) > 1 else "unknown"
-            logger.info(f"   {i+1}. 🕒 {run_time} -> {inbox}")
+            self.logger.info(f"   {i+1}. 🕒 {run_time} -> {inbox}")

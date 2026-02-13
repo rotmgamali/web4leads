@@ -105,18 +105,18 @@ class EmailGenerator:
         """
         role = (lead_data.get("role") or "").lower()
         archetype = self._get_archetype(role)
-        logger.info(f"🎯 [GEN] {campaign_type.upper()} Archetype: {archetype} (detected from role: '{role}')")
+        _logger.info(f"🎯 [GEN] {campaign_type.upper()} Archetype: {archetype} (detected from role: '{role}')")
         
         # Load Template
         template_content = self._load_template_file(campaign_type, archetype, sequence_number)
         
         # Fallback to general if not found and archetype isn't already general
         if not template_content and archetype != "general":
-            logger.info(f"ℹ️ Template for {archetype}/{sequence_number} not found. Falling back to general.")
+            _logger.info(f"ℹ️ Template for {archetype}/{sequence_number} not found. Falling back to general.")
             template_content = self._load_template_file(campaign_type, "general", sequence_number)
             
         if not template_content:
-            logger.error(f"❌ Template missing for {campaign_type}/{archetype}/{sequence_number} and fallback general failed.")
+            _logger.error(f"❌ Template missing for {campaign_type}/{archetype}/{sequence_number} and fallback general failed.")
             return {"subject": "Quick question", "body": "I'd love to connect regarding your current operations."}
 
         # Website Scraping
@@ -254,7 +254,7 @@ class EmailGenerator:
         filename = f"email_{sequence_number}.txt"
         path = self.templates_dir / campaign_type / archetype / filename
         
-        logger.debug(f"🔍 [PATH CHECK] Looking for template at: {path}")
+        _logger.debug(f"🔍 [PATH CHECK] Looking for template at: {path}")
         
         if path.exists():
             content = path.read_text(encoding="utf-8")
