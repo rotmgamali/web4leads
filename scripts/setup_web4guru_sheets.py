@@ -73,7 +73,14 @@ def map_outscraper_row(row: Dict) -> Dict:
     company = clean_value(get_val(["Company", "company", "Business Name", "Start_Date", "name", "Name", "query"])) 
     # In this dataset, 'name' IS the company name.
     
-    domain = clean_value(get_val(["Website", "website", "domain", "site"]))
+    raw_domain = clean_value(get_val(["Website", "website", "domain", "site"]))
+    
+    # Strict filter: Ensure we aren't using the Google Business Profile link
+    if "google.com" in raw_domain.lower() or "goo.gl" in raw_domain.lower():
+        domain = "" # Discard it
+    else:
+        domain = raw_domain
+        
     city = clean_value(get_val(["City", "city", "company_insights.city"]))
     state = clean_value(get_val(["State", "state", "state_code", "company_insights.state"]))
     phone = clean_value(get_val(["Phone", "phone", "contact_phone", "company_phone"]))

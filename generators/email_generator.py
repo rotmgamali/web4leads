@@ -127,8 +127,13 @@ class EmailGenerator:
         url = lead_data.get("website") or lead_data.get("domain")
 
         if not website_content and url:
-            logger.info(f"🌍 [SCRAPE] Attempting to scrape {campaign_type} site: {url}...")
-            try:
+            # SANITY CHECK: Ensure we aren't scraping Google Maps
+            if "google.com" in url.lower() or "goo.gl" in url.lower():
+                logger.warning(f"⚠️ Skipping scrape for Google URL: {url}")
+                website_content = "Scraper skipped for Google URL."
+            else:
+                logger.info(f"🌍 [SCRAPE] Attempting to scrape {campaign_type} site: {url}...")
+                try:
                 if not url.startswith("http"):
                     url = "https://" + url
                 
