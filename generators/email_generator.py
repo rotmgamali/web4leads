@@ -12,6 +12,7 @@ import pytz
 # Suppress SSL warnings from scraper to keep logs clean
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import re
+from mailreef_automation.logger_util import get_logger
 
 # Add project root to path to allow imports from sibling directories
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,7 +24,7 @@ _logger = get_logger("EMAIL_GENERATOR")
 # Try to import scrapers
 try:
     import automation_scrapers.school_scraper as school_scraper
-    logger.info("✓ Successfully imported school_scraper")
+    _logger.info("✓ Successfully imported school_scraper")
 except ImportError:
     school_scraper = None
 
