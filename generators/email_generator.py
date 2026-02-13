@@ -346,56 +346,36 @@ class EmailGenerator:
             "greeting": greeting_line # Expose the calculated greeting (e.g. "Good morning," or "Hi Andrew,")
         }
         
-        # 1. Handle the Greeting specifically (remove "Hi " from template if we have a full greeting line)
-        # If template has "Hi {{ first_name }}," -> replace with "Hi Andrew," (or "Good morning,")
-        # But wait, greeting_line ALREADY contains "Hi " or "Good morning".
-        # So we should replace "Hi {{ first_name }}" with greeting_line WITHOUT the trailing comma if possible, 
-        # or just rely on the fact that greeting_line usually ends in comma? 
-        # Actually my code computes `greeting_line = "Hi Andrew,"` (with comma).
+        # 1. Replace Greeting Variable
+        # Template uses {{ greeting }}
+        # Logic: Replace "{{ greeting }}" with the computed line and ensures no double punctuation
+        if "{{ greeting }}" in draft_body:
+            draft_body = draft_body.replace("{{ greeting }}", greeting_line)
         
-        # Let's try to match "Hi {{ first_name }}," or "Hi {{ first_name }}"
-        # Case A: Time based "Good morning,". We want to nuke the "Hi" in the template.
-        
-        # Robust Regex for Greeting:
-        # Match "Hi" (optional), whitespace, {{ first_name }}, comma(optional)
-        greeting_pattern = re.compile(r'(Hi\s*)?\{\{\s*first_name\s*\}\},?', re.IGNORECASE)
-        
-        # Check if we find it
-        if greeting_pattern.search(draft_body):
-            draft_body = greeting_pattern.sub(greeting_line, draft_body)
-        else:
-             # Fallback: Just simple variable replace if pattern doesn't match
-             draft_body = re.sub(r'\{\{\s*first_name\s*\}\}', first_name, draft_body)
-
         # 2. Replace other variables (school_name, etc)
         for key, val in replacements.items():
-            if key == "first_name": continue # Already handled
+            if key == "greeting": continue # Already handled
             pattern = re.compile(r'\{\{\s*' + key + r'\s*\}\}', re.IGNORECASE)
             draft_body = pattern.sub(str(val), draft_body)
              
-        # Double check: ensure the greeting is at the top if replacement failed (e.g. template diff)
-        # But for now, assume template compliance. 
-        
         # --- 3. Template Stripping (The Cleaning) ---
-        # We need to give the AI only the BODY of the template.
-        # Logic: 
-        # 1. Identify Greeting (regex match for Hi/Dear/Good... ,)
-        # 2. Identify Sign-off (regex match for Best/Sincerely/SenderName)
-        # 3. Remove them.
+        # We need to give the AI only the BODY text to transform.
+        # We must strip the Subject line and the Greeting line.
         
-        # We use the regex-substituted 'draft_body' which already has 'Hi Andrew,' inside.
+        # Remove Subject line
+        clean_draft = re.sub(r'(?i)^Subject:.*?\n+', '', draft_body).strip()
         
-        # Strip Greeting (Start of string)
-        # Matches: "Hi Andrew," or "Good morning," followed by newlines
-        clean_draft = re.sub(r'^\s*(?:Hi|Dear|Good|Hello).*?,\s*\n+', '', draft_body, flags=re.IGNORECASE|re.MULTILINE)
+        # Remove Greeting line (e.g. "Hi Andrew," or "Good morning,")
+        # Matches a greeting at the very start of the (now subject-less) draft
+        clean_draft = re.sub(r'^(?i)(?:Hi|Dear|Good|Hello).*?,\s*\n+', '', clean_draft).strip()
         
-        # Strip Sign-off (End of string)
-        # Matches: "Best,\nMark..." or just "Mark" at end
-        # We aggressively cut anything after "Best," or "Sincerely," or the sender name.
-        # Note: This is heuristic.
+        # Strip Sign-off from bottom of draft
+        # Markers: Best, Sincerely, etc. or the sender's own name
         for marker in ["Best,", "Sincerely,", "Warmly,", "Cheers,", "Thanks,", sender_name]:
              if marker in clean_draft:
-                  clean_draft = clean_draft.split(marker)[0].strip()
+                  # Take only what's before the last occurrence of the marker to be safe
+                  parts = clean_draft.rsplit(marker, 1)
+                  clean_draft = parts[0].strip()
         
         # --- 4. Envelope Definition ---
         # Define the deterministic shell
@@ -409,8 +389,8 @@ class EmailGenerator:
         system_prompt = f"""You are {sender_name}, a helpful consultant.
         
 STYLE GUIDE:
-- Tone: Human, warm, brief.
-- formatting: paragraphs only.
+- Tone: Human, warm, brief, and professional.
+- Formatting: Use paragraphs only.
 - Absolute Rules:
   1. DO NOT include a greeting (e.g. "Hi...").
   2. DO NOT include a sign-off (e.g. "Best, Mark").
@@ -437,30 +417,47 @@ RESEARCH HIGHLIGHTS (Web Scrape):
 {website_content[:3000]}
 
 TASK:
-Rewrite the DRAFT CONTENT to make it feel personal.
-- Use the LEAD CONTEXT (Founded year, specific description, city, etc.) if available to show you know who they are.
-- Weave in 1 detail from RESEARCH HIGHLIGHTS if relevant.
-- write ONLY the body paragraphs.
-- Output format:
-SUBJECT: [Subject]
+Rewrite the DRAFT CONTENT to make it feel personal and handwritten.
+- Use the LEAD CONTEXT (Founded year, specific description, city, etc.) to show you've done your homework.
+- REPUTATION GUIDELINE: If mentioned, be positive or supportive. Never be critical of their reviews; instead, mention how much you appreciate their commitment to the community.
+- write ONLY the body paragraphs. 
+- NO GREETINGS (Hi..., Good morning...).
+- NO SIGN-OFFS (Best..., Andrew...).
+- Keep it under 100 words.
+
+Output format:
+SUBJECT: [Personalized Subject]
 BODY: [Paragraph 1]
-[Paragraph 2]...
+[Paragraph 2]
 """
         return system_prompt, user_prompt, envelope
 
     def _strip_hallucinations(self, body_text: str, greeting: str, sign_off: str) -> str:
-        """Failsafe: If AI wrote 'Hi Andrew,' anyway, remove it."""
-        # Clean Start
-        cleaned = re.sub(r'^\s*(?:Hi|Dear|Good|Hello).*?,\s*\n+', '', body_text, flags=re.IGNORECASE|re.MULTILINE)
-        # Clean End (Sign-off)
-        # Remove "Best," etc if strictly at end
-        cleaned = re.sub(r'\n\s*(?:Best|Sincerely|Warmly|Cheers|Thanks).*?$', '', cleaned, flags=re.IGNORECASE|re.DOTALL)
-        # Remove Name if at end
-        cleaned = re.sub(r'\n\s*Mark.*?$', '', cleaned, flags=re.IGNORECASE|re.DOTALL)
-        cleaned = re.sub(r'\n\s*Genelle.*?$', '', cleaned, flags=re.IGNORECASE|re.DOTALL)
-        cleaned = re.sub(r'\n\s*Andrew.*?$', '', cleaned, flags=re.IGNORECASE|re.DOTALL)
+        """Failsafe: If AI wrote 'Hi Andrew,' or 'Best, Name' anyway, remove it."""
+        lines = body_text.split("\n")
         
-        return cleaned.strip()
+        # 1. Strip Leading Greeting
+        if lines and any(g.lower() in lines[0].lower() for g in ["hi", "dear", "good morning", "good afternoon", "good evening", "hello"]):
+            if "," in lines[0]:
+                lines = lines[1:]
+                
+        # 2. Strip Trailing Sign-off
+        # Check last 2-3 lines for sign-off markers
+        while lines and not lines[-1].strip(): lines.pop() # Remove trailing empty
+        
+        if lines:
+            last_line = lines[-1].strip().lower()
+            # If last line is just a name or a common sign-off
+            markers = ["best", "sincerely", "warmly", "cheers", "thanks", "regards", "andrew", "genelle", "mark"]
+            if any(last_line == m or last_line.startswith(f"{m},") for m in markers):
+                lines.pop()
+                # Check one more line up for the "Best," part if it was "Best,\nName"
+                if lines:
+                    new_last = lines[-1].strip().lower()
+                    if any(new_last == m or new_last.startswith(f"{m},") for m in markers):
+                        lines.pop()
+
+        return "\n".join(lines).strip()
 
     def _generate_legacy_email(self, campaign_type: str, sequence_number: int, lead_data: dict, enrichment_data: dict) -> dict:
         """Fallback for non-school campaigns."""
