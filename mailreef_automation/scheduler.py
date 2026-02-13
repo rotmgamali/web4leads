@@ -32,13 +32,8 @@ class EmailScheduler:
         self.profile_config = config.CAMPAIGN_PROFILES[campaign_profile]
         
         # --- LOGGING ISOLATION ---
-        global logger
         log_file = self.profile_config.get("log_file", "automation.log")
-        logger = get_logger("SCHEDULER", log_file)
-        if log_file != "automation.log":
-            for h in logger.handlers[:]:
-                if isinstance(h, logging.FileHandler) and "automation.log" in h.baseFilename:
-                    logger.removeHandler(h)
+        self.logger = get_logger("SCHEDULER", log_file)
         
         self.generator = EmailGenerator(
             templates_dir=self.profile_config.get("templates_dir", "templates"),
@@ -104,7 +99,7 @@ class EmailScheduler:
             # Safety: Ensure indices are within bounds
             all_inboxes = all_inboxes_raw[start_idx:end_idx]
             
-            logger.info(f"🛡️ [HARDENING] Inbox partition: Using indices {start_idx}-{end_idx} (Total: {len(all_inboxes)} inboxes)")
+            self.logger.info(f"🛡️ [HARDENING] Inbox partition: Using indices {start_idx}-{end_idx} (Total: {len(all_inboxes)} inboxes)")
             
         except Exception as e:
             print(f"Failed to fetch inboxes: {e}")
@@ -173,7 +168,7 @@ class EmailScheduler:
                     offset_seconds = random.randint(60, 300)
                     send_time = send_time + timedelta(seconds=offset_seconds)
                     
-                    # logger.debug(f"Generated slot for inbox {inbox_id} at {send_time} (Window: {window_start}:00)")
+                    # self.logger.debug(f"Generated slot for inbox {inbox_id} at {send_time} (Window: {window_start}:00)")
                     
                     slots.append({
                         "inbox_id": inbox_id,
@@ -191,7 +186,7 @@ class EmailScheduler:
         """Refresh local lead cache if expired or empty"""
         now = datetime.now()
         if not self._lead_cache or (now - self._last_cache_update) > self.CACHE_TTL:
-            logger.info("🔄 Refreshing Stage 1 lead cache...")
+            self.logger.info("🔄 Refreshing Stage 1 lead cache...")
             try:
                 # Use sheets_integration's fetch_all_records (which is also cached)
                 new_batch = self.sheets.get_pending_leads(limit=50) 
@@ -199,12 +194,12 @@ class EmailScheduler:
                 if new_batch:
                     self._lead_cache = new_batch
                     self._last_cache_update = now
-                    logger.info(f"✅ Cached {len(new_batch)} fresh Stage 1 leads.")
+                    self.logger.info(f"✅ Cached {len(new_batch)} fresh Stage 1 leads.")
                 else:
-                    logger.warning("⚠️ No pending Stage 1 leads found!")
+                    self.logger.warning("⚠️ No pending Stage 1 leads found!")
             except Exception as e:
                 # Log only the first line of the error to avoid 429 flood noise
-                logger.error(f"❌ Lead cache refresh failed: {str(e).splitlines()[0]}")
+                self.logger.error(f"❌ Lead cache refresh failed: {str(e).splitlines()[0]}")
 
     def _refresh_followup_cache_if_needed(self, sender_email, inbox_id):
         """Refresh local follow-up cache for a specific sender"""
@@ -214,21 +209,21 @@ class EmailScheduler:
         # Check if we need to refresh (global TTL for now for simplicity, or per-sender if needed)
         # Using inbox_id as key for easier direct lookup
         if inbox_id not in self._followup_cache or (now - last_update) > self.FOLLOWUP_CACHE_TTL:
-            logger.info(f"🔄 Refreshing Stage 2 cache for {sender_email}...")
+            self.logger.info(f"🔄 Refreshing Stage 2 cache for {sender_email}...")
             try:
                 new_batch = self.sheets.get_leads_for_followup(sender_email=sender_email, limit=20)
                 self._followup_cache[inbox_id] = new_batch
                 self._last_followup_update = now
-                logger.debug(f"✅ Cached {len(new_batch)} follow-ups for {sender_email}")
+                self.logger.debug(f"✅ Cached {len(new_batch)} follow-ups for {sender_email}")
             except Exception as e:
-                logger.error(f"❌ Follow-up cache refresh failed for {sender_email}: {str(e).splitlines()[0]}")
+                self.logger.error(f"❌ Follow-up cache refresh failed for {sender_email}: {str(e).splitlines()[0]}")
 
     def _refresh_inbox_map_if_needed(self):
         """Refresh the ID->Email map for sign-offs"""
         now = datetime.now()
         if not self.inbox_map or (now - self._last_inbox_refresh) > self.INBOX_REFRESH_TTL:
             try:
-                logger.info("REFRESHING inbox identity map...")
+                self.logger.info("REFRESHING inbox identity map...")
                 inboxes = self.mailreef.get_inboxes()
                 new_map = {}
                 for ibx in inboxes:
@@ -240,10 +235,10 @@ class EmailScheduler:
                 if new_map:
                     self.inbox_map = new_map
                     self._last_inbox_refresh = now
-                    logger.info(f"✅ Cached {len(new_map)} inbox identities.")
-                    logger.info(f"🔍 DEBUG INBOX MAP: {self.inbox_map}")
+                    self.logger.info(f"✅ Cached {len(new_map)} inbox identities.")
+                    self.logger.info(f"🔍 DEBUG INBOX MAP: {self.inbox_map}")
             except Exception as e:
-                logger.error(f"Failed to refresh inbox map: {e}")
+                self.logger.error(f"Failed to refresh inbox map: {e}")
 
     def select_prospects_for_send(self, inbox_id, count, sequence_stage):
         """Select prospects for a specific send slot (Sheets-First)"""
@@ -272,10 +267,10 @@ class EmailScheduler:
                         return selected
                     return []
                 else:
-                    logger.warning(f"Could not resolve email for inbox ID {inbox_id}")
+                    self.logger.warning(f"Could not resolve email for inbox ID {inbox_id}")
                     return []
             except Exception as e:
-                logger.error(f"Error selecting follow-up: {str(e).splitlines()[0]}")
+                self.logger.error(f"Error selecting follow-up: {str(e).splitlines()[0]}")
                 return []
 
         # Stage 1: New Leads (Use Cache)
@@ -308,10 +303,10 @@ class EmailScheduler:
                     self._refresh_inbox_map_if_needed()
                     sender_email = self.inbox_map.get(str(inbox_id), "unknown")
                 
-                logger.info(f"🔍 DEBUG LOOKUP: ID={inbox_id} -> Sender: {sender_email}")
+                self.logger.info(f"🔍 DEBUG LOOKUP: ID={inbox_id} -> Sender: {sender_email}")
 
                 # Use High-Fidelity Generator
-                logger.info(f"🚀 [SEND START] Generating personalized email for {prospect.get('email')} using sender {sender_email}...")
+                self.logger.info(f"🚀 [SEND START] Generating personalized email for {prospect.get('email')} using sender {sender_email}...")
                 
                 # Note: Sheets Row provides 'school_name', 'domain', 'first_name', 'role', etc.
                 result = self.generator.generate_email(
@@ -326,9 +321,15 @@ class EmailScheduler:
                 body_text = result['body']
                 body_html = body_text.replace('\n', '<br>')
                 
-                # VERBOSE LOGGING FOR USER VISIBILITY
-                logger.info(f"📧 [EMAIL CONTENT] Subject: {subject}")
-                logger.info(f"--- BODY START ---\n{body_text}\n--- BODY END ---")
+                # VERBOSE LOGGING FOR USER VISIBILITY (Consolidated to prevent interleaving)
+                log_msg = [
+                    f"📧 [EMAIL CONTENT] To: {prospect['email']}",
+                    f"Subject: {subject}",
+                    f"--- BODY START ---",
+                    body_text,
+                    f"--- BODY END ---"
+                ]
+                self.logger.info("\n".join(log_msg))
                 
                 response = self.mailreef.send_email(
                     inbox_id=inbox_id,
@@ -337,7 +338,7 @@ class EmailScheduler:
                     body=f"<html><body>{body_html}</body></html>"
                 )
                 
-                logger.info(f"✅ [SEND SUCCESS] Email sent to {prospect['email']} via inbox {inbox_id}. MsgID: {response.get('message_id')}")
+                self.logger.info(f"✅ [SEND SUCCESS] Email sent to {prospect['email']} via inbox {inbox_id}. MsgID: {response.get('message_id')}")
                 
                 # Sheets-First: Update Status Immediately
                 # We need the sender email to record who sent it
@@ -374,11 +375,11 @@ class EmailScheduler:
         if not self.is_running:
             self.scheduler.start()
             self.is_running = True
-            logger.info("🚀 Email Scheduler Started (EST Timezone)")
+            self.logger.info("🚀 Email Scheduler Started (EST Timezone)")
             self._schedule_daily_runs()
             
             # Run immediate prep for first launch
-            logger.info("📡 Triggering immediate queue preparation...")
+            self.logger.info("📡 Triggering immediate queue preparation...")
             self._prepare_daily_queue()
     
     def stop(self):
@@ -400,7 +401,7 @@ class EmailScheduler:
     
     def _prepare_daily_queue(self):
         """Prepare and queue all sends for the day"""
-        logger.info("📅 Starting daily queue preparation...")
+        self.logger.info("📅 Starting daily queue preparation...")
         now = datetime.now(pytz.timezone('US/Eastern'))
         day_of_week = now.weekday()
         
@@ -413,7 +414,7 @@ class EmailScheduler:
         
         # Generate slots
         slots = self.generate_send_slots(day_type, inbox_count)
-        logger.info(f"🎯 Generated {len(slots)} send slots for today ({day_type}).")
+        self.logger.info(f"🎯 Generated {len(slots)} send slots for today ({day_type}).")
         
         # Schedule each slot
         for slot in slots:
@@ -441,10 +442,10 @@ class EmailScheduler:
             stage = 1
         
         if prospects:
-            logger.info(f"⏰ [SLOT FIRE] Executing Stage {stage} send for {prospects[0].get('email')} from inbox {inbox_id}")
+            self.logger.info(f"⏰ [SLOT FIRE] Executing Stage {stage} send for {prospects[0].get('email')} from inbox {inbox_id}")
             self.execute_send(inbox_id, prospects, sequence_number=stage)
         else:
-             # logger.debug(f"🔇 [SLOT FIRE] No prospects (Stage 1 or 2) found for inbox {inbox_id} at {scheduled_time}")
+             # self.logger.debug(f"🔇 [SLOT FIRE] No prospects (Stage 1 or 2) found for inbox {inbox_id} at {scheduled_time}")
              pass
 
     def log_upcoming_sends(self, limit=5):

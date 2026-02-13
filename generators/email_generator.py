@@ -17,9 +17,8 @@ import re
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
-from mailreef_automation.logger_util import get_logger
 load_dotenv()
-logger = get_logger("EMAIL_GENERATOR")
+_logger = get_logger("EMAIL_GENERATOR")
 
 # Try to import scrapers
 try:
@@ -30,7 +29,7 @@ except ImportError:
 
 try:
     import automation_scrapers.b2b_scraper as b2b_scraper
-    logger.info("✓ Successfully imported b2b_scraper")
+    _logger.info("✓ Successfully imported b2b_scraper")
 except ImportError:
     b2b_scraper = None
 
@@ -72,14 +71,11 @@ class EmailGenerator:
             "admissions": ["admission", "enrollment", "registrar"]
         }
             
+            
         # --- LOGGING ISOLATION ---
-        # Re-bind the global logger for this module to the profile-specific file
-        global logger
-        logger = get_logger("EMAIL_GENERATOR", log_file)
-        if log_file != "automation.log":
-            for h in logger.handlers[:]:
-                if isinstance(h, logging.FileHandler) and "automation.log" in h.baseFilename:
-                    logger.removeHandler(h)
+        self.logger = get_logger("EMAIL_GENERATOR", log_file)
+        # Avoid removing handlers from a shared logger name if we can avoid it, 
+        # but if we must isolate, we do it in self.logger
 
     def generate_email(
         self,
@@ -129,10 +125,10 @@ class EmailGenerator:
         if not website_content and url:
             # SANITY CHECK: Ensure we aren't scraping Google Maps
             if "google.com" in url.lower() or "goo.gl" in url.lower():
-                logger.warning(f"⚠️ Skipping scrape for Google URL: {url}")
+                self.logger.warning(f"⚠️ Skipping scrape for Google URL: {url}")
                 website_content = "Scraper skipped for Google URL."
             else:
-                logger.info(f"🌍 [SCRAPE] Attempting to scrape {campaign_type} site: {url}...")
+                self.logger.info(f"🌍 [SCRAPE] Attempting to scrape {campaign_type} site: {url}...")
                 try:
                     if not url.startswith("http"):
                         url = "https://" + url
@@ -146,11 +142,11 @@ class EmailGenerator:
                         website_content = "Scraper unavailable."
 
                     if website_content and len(website_content) > 100:
-                        logger.info(f"✅ [SCRAPE SUCCESS] Found {len(website_content)} characters for personalization.")
+                        self.logger.info(f"✅ [SCRAPE SUCCESS] Found {len(website_content)} characters for personalization.")
                     else:
-                        logger.warning(f"⚠️ [SCRAPE WEAK] Only found {len(website_content) if website_content else 0} chars.")
+                        self.logger.warning(f"⚠️ [SCRAPE WEAK] Only found {len(website_content) if website_content else 0} chars.")
                 except Exception as e:
-                    logger.error(f"❌ [SCRAPE ERROR] Failed for {url}: {e}")
+                    self.logger.error(f"❌ [SCRAPE ERROR] Failed for {url}: {e}")
                     website_content = "No website content available."
         
         # Parse Custom Data
@@ -176,9 +172,9 @@ class EmailGenerator:
                 
                 if context_parts:
                     custom_context = "\n".join(context_parts)
-                    logger.info(f"✅ [DATA] Extracted rich personalization details: {len(context_parts)} items.")
+                    self.logger.info(f"✅ [DATA] Extracted rich personalization details: {len(context_parts)} items.")
         except Exception as e:
-            logger.warning(f"⚠️ Failed to parse custom_data: {e}")
+            self.logger.warning(f"⚠️ Failed to parse custom_data: {e}")
 
         # Build Prompts (System + User)
         system_prompt, user_prompt, envelope = self._prepare_templated_prompts(
@@ -261,18 +257,18 @@ class EmailGenerator:
         
         if path.exists():
             content = path.read_text(encoding="utf-8")
-            logger.info(f"📄 [TEMPLATE CONTENT PREVIEW] {content[:100]}...")
+            self.logger.info(f"📄 [TEMPLATE CONTENT PREVIEW] {content[:100]}...")
             return content
         
         # Diagnostic: List files to see what's actually there
         try:
             if self.templates_dir.exists():
                 contents = os.listdir(self.templates_dir)
-                logger.debug(f"📁 [DIR LIST] Content of {self.templates_dir}: {contents}")
+                self.logger.debug(f"📁 [DIR LIST] Content of {self.templates_dir}: {contents}")
             else:
-                logger.error(f"🚨 [DIR MISSING] Template directory NOT FOUND at {self.templates_dir}")
+                self.logger.error(f"🚨 [DIR MISSING] Template directory NOT FOUND at {self.templates_dir}")
         except Exception as e:
-            logger.debug(f"🔍 [DIR ERROR] Could not list directory: {e}")
+            self.logger.debug(f"🔍 [DIR ERROR] Could not list directory: {e}")
             
         return None
 
@@ -482,10 +478,10 @@ BODY: [Paragraph 1]
         result = self._call_llm(prompt)
         
         # Obsessive Content Audit
-        logger.info(f"✍️  [CONTENT GEN] Generated copy for {lead_data.get('email')}")
-        logger.info(f"   Subject: {result['subject']}")
+        self.logger.info(f"✍️  [CONTENT GEN] Generated copy for {lead_data.get('email')}")
+        self.logger.info(f"   Subject: {result['subject']}")
         body_preview = result['body'].replace('\n', ' ')[:100] + "..."
-        logger.info(f"   Body Preview: {body_preview}")
+        self.logger.info(f"   Body Preview: {body_preview}")
         
         return result
 
@@ -503,7 +499,7 @@ BODY: [Paragraph 1]
             )
             return self._parse_response(response.choices[0].message.content)
         except Exception as e:
-            logger.error(f"OpenAI Error: {e}")
+            self.logger.error(f"OpenAI Error: {e}")
             return {"subject": "Error", "body": str(e)}
 
     def _parse_response(self, content: str) -> dict:

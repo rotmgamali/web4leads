@@ -21,6 +21,7 @@ class MailreefClient:
         self.session.headers.update({
             "Content-Type": "application/json"
         })
+        self.logger = logger # Use the module-level logger consistently
     
     def get_inboxes(self) -> List[Dict]:
         """
@@ -119,8 +120,13 @@ class MailreefClient:
             
             if response.status_code in [201, 200]:
                 data = response.json()
-                logger.debug(f"✅ [API SUCCESS] Message queued as {data.get('id')}")
-                return {"status": "success", "message_id": data.get('id')}
+                # DIAGNOSTIC: Log full response if id is missing
+                msg_id = data.get('id') or data.get('message_id') or data.get('data', {}).get('id')
+                if not msg_id:
+                    self.logger.warning(f"⚠️ [API RESPONSE] Success but no ID found in: {data}")
+                
+                self.logger.debug(f"✅ [API SUCCESS] Message queued as {msg_id}")
+                return {"status": "success", "message_id": msg_id}
             else:
                 try:
                     error_data = response.json()
@@ -128,7 +134,7 @@ class MailreefClient:
                 except:
                     error_msg = response.text
                 
-                logger.error(f"❌ [API ERROR] Failed to send (HTTP {response.status_code}): {error_msg}")
+                self.logger.error(f"❌ [API ERROR] Failed to send (HTTP {response.status_code}): {error_msg}")
                 raise Exception(f"Mailreef API Error: {error_msg}")
                 
         except Exception as e:

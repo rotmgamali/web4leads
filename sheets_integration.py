@@ -28,8 +28,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from gspread.exceptions import APIError
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+from mailreef_automation.logger_util import get_logger
+logger = get_logger("SHEETS_CLIENT")
 
 # OAuth scopes needed
 SCOPES = [
@@ -52,8 +53,9 @@ class GoogleSheetsClient:
     
     def __init__(self, input_sheet_name=INPUT_SHEET_NAME, replies_sheet_name=REPLIES_SHEET_NAME, replies_sheet_id=None):
         self.input_sheet_name = input_sheet_name
-        self.replies_sheet_name = replies_sheet_name
+        self.replies_sheet_name = replies_sheet_name or REPLIES_SHEET_NAME
         self.replies_sheet_id = replies_sheet_id
+        self.logger = logger
         
         self.client: Optional[gspread.Client] = None
         self.input_sheet: Optional[gspread.Spreadsheet] = None
