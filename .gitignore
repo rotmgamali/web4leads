@@ -1,0 +1,43 @@
+# Sensitive data
+.env
+credentials/*.json
+token.json
+credentials/
+
+# Databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Logs
+logs/
+mailreef_automation/logs/
+*.log
+
+# System
+.DS_Store
+Thumbs.db
+
+# State
+mailreef_automation/logs/reply_watcher_state.json
+data/
+
+# Oversized / Data directories
+Flaming Diva/
+ivybound-lead-gen/
+warming/
+leads/
+scrapers/
+senders/
+# templates/ (Removed from ignore to allow cloud deployment)
+Jobs/
+Jobs_Clone/
+playbook.pdf

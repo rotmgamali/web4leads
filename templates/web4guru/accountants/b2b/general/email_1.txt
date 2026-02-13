@@ -1,0 +1,12 @@
+Subject: Question for {{ company_name }}
+
+{{ greeting }}
+
+I've been looking into {{ company_name }} and noticed [Personalized Detail].
+
+I wanted to ask - are you currently taking on new clients this quarter?
+
+Also, curious if you're using any AI tools to help with client acquisition yet?
+
+Best,
+Andrew

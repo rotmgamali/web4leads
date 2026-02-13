@@ -1,0 +1,20 @@
+Subject: Supporting families at {{ school_name }}
+
+Hi {{ first_name }},
+
+I wanted to follow up with some specifics that might be valuable for the {{ school_name }} community. 
+
+We help private schools offer high-quality SAT/ACT prep for just $375 (usually $850+). Our students see an average increase of 150+ points on the SAT, which has helped them secure over $125k in merit scholarships.
+
+**For {{ school_name }}:**
+- Zero cost to the school
+- No extra workload for your team
+- We provide all the flyers and resources
+- Families sign up directly with us
+
+Would you have 15 minutes to chat about how this could benefit your students?
+
+Best,
+Mark Greenstein
+Aspire Academy
+25 Years | 50+ School Partners

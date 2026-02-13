@@ -1,0 +1,15 @@
+Subject: Supporting families at {{ school_name }}
+
+Hi {{ first_name }},
+
+I wanted to follow up with some specifics that might be helpful as you think about test prep for {{ school_name }} families.
+
+We help private schools offer high-impact SAT/ACT prep at a fraction of the usual cost—$375 for a program that typically runs $850+. Our students consistently see average improvements of 150+ points on the SAT, which has helped them secure over $125k in merit scholarships on average.
+
+The best part is that it’s zero cost to the school and zero administrative burden for your team. We handle the sign-ups and providing all the flyers and newsletter resources for your families.
+
+Would you have 15 minutes this week for a brief call? I'd love to see if this aligns with your goals for this year.
+
+Best,
+Andrew, Aspire Academy
+25 Years | 50+ School Partners

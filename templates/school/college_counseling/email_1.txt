@@ -1,0 +1,12 @@
+Subject: Test prep support at {{ school_name }}
+
+Hi {{ first_name }},
+
+I've been reviewing your college counseling resources at {{ school_name }}—I was impressed by the support you provide your students during the admissions process.
+
+I'm curious how you're currently handling SAT/ACT prep recommendations. I work with private schools to provide high-quality, specialized prep that families genuinely appreciate, especially when it comes to securing merit scholarships.
+
+Would you have a few minutes for a quick chat? I'd love to hear what's working best for your families.
+
+Best,
+Andrew, Aspire Academy

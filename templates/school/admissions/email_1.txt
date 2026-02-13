@@ -1,0 +1,12 @@
+Subject: {{ school_name }} families and college prep
+
+Hi {{ first_name }},
+
+I've been reviewing your admissions materials at {{ school_name }}—it's clear that your community values both academic excellence and student success.
+
+In your role as Director of Admissions, I imagine you're often speaking with prospective families about college readiness. I'm curious how you're currently addressing their questions about test prep support. I work with independent schools to provide resources that families genuinely appreciate during the enrollment process.
+
+Would you have a few minutes for a quick chat? I'd love to hear your insights.
+
+Best,
+Andrew, Aspire Academy

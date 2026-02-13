@@ -1,0 +1,19 @@
+Subject: Supporting families at {{ school_name }}
+
+Hi {{ first_name }},
+
+I wanted to follow up with some specifics that might be a blessing for your families at {{ school_name }}. 
+
+We help faith-based schools offer deeply discounted SAT/ACT prep—$375 for a program that usually costs $850+. Our students consistently see average improvements of 150+ points on the SAT, which has helped many families secure $125k+ in merit scholarships.
+
+**For your community:**
+- Zero cost to {{ school_name }}
+- No extra work for your staff
+- We provide all the flyers and newsletter resources
+- Helps families afford college through improved scholarship chances
+
+Would you have 15 minutes to chat about how this could benefit your students?
+
+Blessings,
+Andrew, Aspire Academy
+25 Years | 10,000+ Students Helped

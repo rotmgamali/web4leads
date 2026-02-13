@@ -1,0 +1,20 @@
+Subject: Enhancing Value at {{ school_name }} (Zero Cost)
+
+Hi {{ first_name }},
+
+Following up on my last email—I wanted to share a specific way we help {{ school_name }} provide more value to families without any budget impact.
+
+We offer your families deeply discounted SAT/ACT prep ($375 for 20 hours of live instruction). Our students see an average increase of 150+ points on the SAT, which helps them secure over $125k in merit scholarships on average.
+
+**For the Business Office:**
+- 100% Zero Cost to {{ school_name }}
+- No administrative burden
+- Ready-made materials for marketing and newsletters
+- Justifies tuition through measurable college outcomes
+
+Would you have 15 minutes for a quick Zoom this week? 
+
+Best,
+Mark Greenstein
+Aspire Academy
+25 Years | 50+ School Partners

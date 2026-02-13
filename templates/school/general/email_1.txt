@@ -1,0 +1,13 @@
+Subject: Quick question about {{ school_name }}
+
+Hi {{ first_name }},
+
+I've been following the progress at {{ school_name }} and was impressed by the community you're building there. 
+
+I work with private schools on college readiness resources, and I'm curious how you're currently thinking about SAT/ACT prep support for your students. I'd love to hear what's working best for your school this year.
+
+Would you have a few minutes for a casual chat?
+
+Best,
+Mark Greenstein
+Aspire Academy

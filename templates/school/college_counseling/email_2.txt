@@ -1,0 +1,15 @@
+Subject: Merit Scholarship Support for {{ school_name }} Students
+
+Hi {{ first_name }},
+
+I wanted to follow up with some data on how we support college counseling offices in boosting merit scholarship outcomes.
+
+Our students see an average increase of 150+ points on the SAT, which directly correlates to an average of $125,000+ in merit aid awards. We offer {{ school_name }} families 20 hours of live instruction for just $375 (over 50% off retail).
+
+We provide ready-to-use flyers and newsletter blurbs so you can easily share this without any extra admin work on your part.
+
+Would you be open to a 15-minute call to see if this would be a helpful resource for your juniors and seniors? 
+
+Best,
+Andrew, Aspire Academy
+25 Years | 10,000+ Students Helped

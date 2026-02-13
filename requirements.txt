@@ -1,0 +1,12 @@
+PySocks
+requests
+apscheduler
+tzdata>=2023.3
+pytz>=2023.3
+openai
+beautifulsoup4
+gspread
+google-auth
+google-auth-oauthlib
+python-dotenv
+httpx

@@ -1,0 +1,13 @@
+Subject: Quick question about {{ school_name }}
+
+Hi {{ first_name }},
+
+I came across {{ school_name }} while researching independent schools in Florida—your commitment to building a unique learning environment really stands out.
+
+I work with school leaders on college readiness programs, and I'm curious how you're currently supporting families when it comes to the SAT/ACT. I'd love to hear your thoughts on how your community is navigating the current admissions landscape.
+
+Would you be open to a brief, casual chat? I'm simply looking to learn what's top of mind for you.
+
+Best,
+Mark Greenstein
+Aspire Academy

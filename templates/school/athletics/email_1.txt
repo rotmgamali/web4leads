@@ -1,0 +1,12 @@
+Subject: Quick question about {{ school_name }} athletics
+
+Hi {{ first_name }},
+
+I've been following the athletic program at {{ school_name }} and was impressed by how your teams are performing. I know how much work goes into student-athletes balancing their time between the field and the classroom.
+
+I work with private schools on college readiness resources specifically for athletes. I'm curious how you're currently supporting your students when it comes to the SAT/ACT—especially those looking for athletic scholarships.
+
+Would you have a few minutes for a brief chat? I'd love to hear what's working best for your program.
+
+Best,
+Andrew, Aspire Academy

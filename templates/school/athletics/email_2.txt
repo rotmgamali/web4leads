@@ -1,0 +1,19 @@
+Subject: Supporting student-athletes at {{ school_name }}
+
+Hi {{ first_name }},
+
+Following up on my last email—I wanted to share how we help athletic directors support their students' academic goals.
+
+At Aspire Academy, we offer discounted SAT/ACT prep that fits into busy practice and game schedules. Our students see average improvements of 150+ points, which is often the difference-maker for athletic scholarship eligibility.
+
+**What Victory Christian Academy gets:**
+- Zero cost to {{ school_name }}
+- Flexible online classes that work around practice
+- High-impact results (average 150+ point increase)
+- Ready-to-use materials for your parent meetings
+
+Would you have 15 minutes this week for a quick call? 
+
+Best,
+Andrew, Aspire Academy
+25 Years | 50+ School Partners

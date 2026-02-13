@@ -1,0 +1,13 @@
+Subject: Quick question regarding {{ school_name }}
+
+Hi {{ first_name }},
+
+I came across {{ school_name }} while researching independent schools in Florida—you've built an impressive program there.
+
+I work with school business leaders on zero-cost value-add resources for families. I'm curious how you're currently thinking about student support services as a way to enhance parent satisfaction and justify the unique value of a {{ school_name }} education.
+
+Would you have a few minutes for a brief chat?
+
+Best,
+Mark Greenstein
+Aspire Academy

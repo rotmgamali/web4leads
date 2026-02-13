@@ -1,0 +1,18 @@
+Subject: Supporting Academic Outcomes at {{ school_name }}
+
+Hi {{ first_name }},
+
+Following up on my last email—I wanted to share how we support academic deans in boosting student outcomes without adding to the workload.
+
+We offer your families discounted, live-online SAT/ACT prep for just $375. Our students see an average increase of 150+ points, which significantly impacts their college options and merit aid eligibility.
+
+We can also provide:
+- Free Parent Education Nights
+- 1-Hour Study Skills Workshops
+- No-cost flyers and newsletter copy
+
+Would you be open to a 15-minute chat to explore if this would be a valuable resource for {{ school_name }} this year? 
+
+Best,
+Genelle, Aspire Academy
+100+ Point Improvement Guarantee

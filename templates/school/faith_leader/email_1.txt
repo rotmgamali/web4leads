@@ -1,0 +1,12 @@
+Subject: Quick question about {{ school_name }}
+
+Hi {{ first_name }},
+
+I hope this message finds you well. I've been following the community you're building at {{ school_name }}—I know that in faith-based education, the focus is on the whole person, and academic success is a key part of that mission.
+
+I work with private schools on college readiness resources that families genuinely appreciate. I'm curious how {{ school_name }} is currently supporting students in their journey toward college and life after school.
+
+Would you have a few minutes to chat? I'd love to hear how things are going for your community.
+
+Blessings,
+Andrew, Aspire Academy

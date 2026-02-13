@@ -1,0 +1,12 @@
+Subject: Re: Question for {{ company_name }}
+
+{{ greeting }}
+
+I wanted to circle back on this. We recently helped a firm similar to {{ company_name }} add 5 high value clients in their first month using our AI-driven system—without spending hours on manual outreach.
+
+Our approach builds trust by starting real conversations with decision-makers who actually need your services.
+
+I’d love to show you the case study and see if we could replicate those results for you. Would you be open to a 5-minute call this week?
+
+Best,
+Andrew

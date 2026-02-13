@@ -1,0 +1,16 @@
+Subject: Differentiation and Outcomes at {{ school_name }}
+
+Hi {{ first_name }},
+
+I wanted to follow up on my previous note. At Aspire Academy, we focus on helping independent schools differentiate their "Value Prop" through superior college outcomes.
+
+We provide your families with deeply discounted, premium SAT/ACT prep—$375 for 20 hours of live instruction. Our results are well-documented: 150+ point average SAT increases and over $125k in merit scholarship awards per student.
+
+For {{ school_name }}, this is a zero-cost value-add. We provide ready-made materials for your newsletters and parent information sessions, and your families deal with us directly.
+
+Would you have 15 minutes for a quick Zoom? You can see a bit more of how we partner with schools here: https://ibforschools.info/
+
+Best,
+Mark Greenstein
+Aspire Academy
+25 Years | 10,000+ Students Helped

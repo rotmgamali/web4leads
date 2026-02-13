@@ -1,0 +1,12 @@
+Subject: Quick question about {{ school_name }}
+
+Hi {{ first_name }},
+
+I hope your week is off to a great start. 
+
+I've been following what you're doing at {{ school_name }}—I was particularly interested to see your focus on academic excellence and student development. I work with school leaders on college readiness resources, and I'm curious how you're currently approaching test prep support for your families.
+
+Would you be open to a quick chat? I'd love to hear your perspective on what's working best for your students.
+
+Best,
+Andrew, Aspire Academy

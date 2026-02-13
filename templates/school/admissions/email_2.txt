@@ -1,0 +1,15 @@
+Subject: Boosting Enrollment Value for {{ school_name }} Families
+
+Hi {{ first_name }},
+
+Following up on my last email—I wanted to share how we help admissions teams differentiate their school's value to prospective families.
+
+We partner with independent schools to offer deeply discounted SAT/ACT prep ($375 for 20 hours). It’s a tangible benefit you can highlight during admissions events and in your recruitment materials. Our students see an average increase of 150+ points and earn significant merit scholarships.
+
+For {{ school_name }}, there's zero cost and zero administrative work. We provide all the flyers and copy for your newsletters.
+
+Would you be open to a 15-minute chat to see if this aligns with your enrollment strategy?
+
+Best,
+Andrew, Aspire Academy
+25 Years | 10,000+ Students Helped
