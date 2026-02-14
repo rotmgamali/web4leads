@@ -42,6 +42,7 @@ SCOPES = [
 # File paths
 CREDENTIALS_FILE = Path(__file__).parent / 'credentials' / 'google_oauth.json'
 TOKEN_FILE = Path(__file__).parent / 'credentials' / 'token.json'
+SERVICE_ACCOUNT_FILE = Path(__file__).parent / 'credentials' / 'service_account.json'
 
 # Sheet names
 INPUT_SHEET_NAME = "Ivy Bound - Campaign Leads"
@@ -150,6 +151,17 @@ class GoogleSheetsClient:
                     logger.info("✓ Authenticated via Environment Variable (Service Account)")
         except Exception as e:
             logger.warning(f"Failed to load credentials from environment: {e}")
+
+        # 1.5 Try Service Account JSON file (Permanent stability)
+        if not creds and SERVICE_ACCOUNT_FILE.exists():
+            try:
+                from google.oauth2 import service_account
+                creds = service_account.Credentials.from_service_account_file(
+                    str(SERVICE_ACCOUNT_FILE), scopes=SCOPES
+                )
+                logger.info("✓ Authenticated via Service Account JSON (Persistent)")
+            except Exception as e:
+                logger.warning(f"Could not load service account JSON: {e}")
 
         # 2. Fallback to local token file (Best for local development)
         if not creds and TOKEN_FILE.exists():
