@@ -110,10 +110,11 @@ class EmailScheduler:
 
         if day_type == "business":
             # Rotation logic: (day_of_year * 2) % total_inboxes
-            # We want to PAUSE 2 inboxes.
-            day_of_year = datetime.now(pytz.timezone('US/Eastern')).timetuple().tm_yday
+            # HARDENING: Disable rotation for high-volume Web4Guru profiles
+            is_high_volume = "WEB4GURU" in self.profile_config.get("log_file", "").upper() or "STRATEGY_B" in self.profile_config.get("log_file", "").upper()
             
-            if total_inboxes_available > 0:
+            if total_inboxes_available > 0 and not is_high_volume:
+                day_of_year = datetime.now(pytz.timezone('US/Eastern')).timetuple().tm_yday
                 start_pause_index = (day_of_year * 2) % total_inboxes_available
                 paused_indices = {start_pause_index, (start_pause_index + 1) % total_inboxes_available}
                 
@@ -123,10 +124,15 @@ class EmailScheduler:
                 
                 print(f"Business day rotation: Pausing inboxes at indices {paused_indices}")
             else:
-                 print("No inboxes found to schedule.")
-                
+                # Weekend or high-volume profile: All inboxes active
+                active_inboxes = all_inboxes
+                if is_high_volume:
+                    print(f"High-Volume Profile ({self.profile_config.get('log_file')}): All {len(active_inboxes)} inboxes active (Rotation disabled)")
+                else:
+                    print("Business day: All inboxes active (Rotation skip)")
+        
         else:
-            # Weekend: All inboxes active
+            # Weekend
             active_inboxes = all_inboxes
             print("Weekend: All inboxes active")
         

@@ -15,12 +15,12 @@ WEEKEND_DAYS_PER_MONTH = 8
 
 # ==================== INBOX CONFIGURATION ====================
 TOTAL_INBOXES = 95
-INBOXES_PER_DAY_BUSINESS = 93  # 2 inboxes paused for precision
+INBOXES_PER_DAY_BUSINESS = 95  # Maximize: All inboxes active
 INBOXES_PER_DAY_WEEKEND = 95   # All inboxes active on weekends
 INBOX_PAUSED_IDS = []          # Dynamic pause list for health monitoring
 
-EMAILS_PER_INBOX_DAY_BUSINESS = 25
-EMAILS_PER_INBOX_DAY_WEEKEND = 9
+EMAILS_PER_INBOX_DAY_BUSINESS = 50 # Scaled from 25
+EMAILS_PER_INBOX_DAY_WEEKEND = 50  # Scaled from 9
 
 # ==================== TELEGRAM ALERTS ====================
 TELEGRAM_BOT_TOKEN = "7224632370:AAFgWL94FbffWBO6COKnYyhrMKymFJQV0po"
@@ -29,23 +29,20 @@ TELEGRAM_CHAT_ID = "7059103286" # Auto-discovered (Andrew Rollins)
 # ==================== SENDING WINDOWS (24-hour format, EST) ====================
 # Business days: 6:00 - 19:30 (avoid 11:00-14:00 busy hours)
 BUSINESS_DAY_WINDOWS = [
-    {"start": 6, "end": 7, "emails_per_inbox": 2},
-    {"start": 7, "end": 8, "emails_per_inbox": 2},
-    {"start": 8, "end": 9, "emails_per_inbox": 3},
-    {"start": 9, "end": 10, "emails_per_inbox": 4}, # Bumped to 4
-    {"start": 10, "end": 11, "emails_per_inbox": 3},
-    {"start": 12, "end": 13, "emails_per_inbox": 3},
-    {"start": 15, "end": 16, "emails_per_inbox": 2},
-    {"start": 16, "end": 17, "emails_per_inbox": 2},
-    {"start": 17, "end": 18, "emails_per_inbox": 2},
-    {"start": 18, "end": 19, "emails_per_inbox": 2},
+    {"start": 6, "end": 7, "emails_per_inbox": 4},
+    {"start": 7, "end": 8, "emails_per_inbox": 4},
+    {"start": 8, "end": 9, "emails_per_inbox": 6},
+    {"start": 9, "end": 10, "emails_per_inbox": 8},
+    {"start": 10, "end": 11, "emails_per_inbox": 6},
+    {"start": 12, "end": 13, "emails_per_inbox": 6},
+    {"start": 15, "end": 16, "emails_per_inbox": 4},
+    {"start": 16, "end": 17, "emails_per_inbox": 4},
+    {"start": 17, "end": 18, "emails_per_inbox": 4},
+    {"start": 18, "end": 19, "emails_per_inbox": 4},
 ]
 
-# Weekend days: 19:00 - 20:30
-WEEKEND_DAY_WINDOWS = [
-    {"start": 19, "end": 20, "emails_per_inbox": 5},
-    {"start": 20, "end": 21, "emails_per_inbox": 4},
-]
+# Weekend days: Match Business days for maximum persistent volume
+WEEKEND_DAY_WINDOWS = BUSINESS_DAY_WINDOWS
 
 # Quiet hours: No sending
 QUIET_HOURS = {"start": 21, "end": 5}
