@@ -172,28 +172,31 @@ class GoogleSheetsClient:
                 logger.warning(f"Could not load token: {e}")
         
         if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
+            # If we have creds but they aren't valid, try to refresh first
+            if creds:
                 try:
-                    logger.info("Attempting to refresh expired token...")
+                    logger.info("Refreshing credentials...")
                     creds.refresh(Request())
                 except Exception as e:
-                    logger.error(f"❌ Token refresh failed: {e}")
-                    if os.environ.get("RAILWAY_ENVIRONMENT") or not sys.stdin.isatty():
-                        logger.critical("🛑 AUTOMATION BLOCKED: Google OAuth token has expired or been revoked.")
-                        logger.critical("Since you are running in a non-interactive environment (Railway), you must manually refresh the token.")
-                        logger.critical("1. Run the system locally once to refresh credentials/token.json")
-                        logger.critical("2. Copy the content of token.json to the GOOGLE_SHEETS_CREDENTIALS environment variable in Railway.")
-                        logger.critical("Alternatively, switch to a Service Account for permanent stability.")
-                        raise Exception("Interactive OAuth flow not possible in this environment.")
-                    creds = self._run_oauth_flow()
-            else:
+                    logger.debug(f"Initial refresh attempt failed: {e}")
+
+            # If still not valid, handle fallback
+            if not creds or not creds.valid:
                 if os.environ.get("RAILWAY_ENVIRONMENT") or not sys.stdin.isatty():
-                    logger.critical("🛑 No valid Google credentials found in environment or local file.")
+                    logger.critical("🛑 No valid Google credentials found.")
                     raise Exception("Missing credentials in non-interactive environment.")
-                creds = self._run_oauth_flow()
+                
+                # Only run OAuth flow if we don't have a Service Account
+                # (Service accounts shouldn't trigger OAuth browser flows)
+                from google.oauth2 import service_account
+                if isinstance(creds, service_account.Credentials):
+                    logger.error("❌ Service Account authentication failed. Please check your JSON key.")
+                    raise Exception("Service Account authentication failed.")
+                else:
+                    creds = self._run_oauth_flow()
             
-            # Save credentials locally for future use
-            if creds and not env_creds:
+            # Save credentials locally for future use (OAuth tokens only)
+            if creds and not env_creds and not isinstance(creds, service_account.Credentials):
                 TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
                 with open(TOKEN_FILE, 'w') as f:
                     f.write(creds.to_json())
