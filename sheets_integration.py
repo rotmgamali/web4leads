@@ -26,6 +26,7 @@ import gspread
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 from gspread.exceptions import APIError
 
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -146,7 +147,6 @@ class GoogleSheetsClient:
                     logger.info("✓ Authenticated via Environment Variable (User Token)")
                 else:
                     # Fallback to service account if that's what's provided
-                    from google.oauth2 import service_account
                     creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
                     logger.info("✓ Authenticated via Environment Variable (Service Account)")
         except Exception as e:
@@ -155,7 +155,6 @@ class GoogleSheetsClient:
         # 1.5 Try Service Account JSON file (Permanent stability)
         if not creds and SERVICE_ACCOUNT_FILE.exists():
             try:
-                from google.oauth2 import service_account
                 creds = service_account.Credentials.from_service_account_file(
                     str(SERVICE_ACCOUNT_FILE), scopes=SCOPES
                 )
@@ -188,8 +187,7 @@ class GoogleSheetsClient:
                 
                 # Only run OAuth flow if we don't have a Service Account
                 # (Service accounts shouldn't trigger OAuth browser flows)
-                from google.oauth2 import service_account
-                if isinstance(creds, service_account.Credentials):
+                if creds and isinstance(creds, service_account.Credentials):
                     logger.error("❌ Service Account authentication failed. Please check your JSON key.")
                     raise Exception("Service Account authentication failed.")
                 else:
