@@ -137,7 +137,11 @@ def main():
         # Start Reply Watcher (Background Thread)
         logger.info(f"Starting reply watcher for {profile_name}...")
         from reply_watcher import ReplyWatcher
-        watcher = ReplyWatcher(profile_name=profile_name)
+        watcher = ReplyWatcher(
+            mailreef_client=mailreef,
+            config=cfg,
+            profile_name=profile_name
+        )
         import threading
         watcher_thread = threading.Thread(target=watcher.run_daemon, daemon=True)
         watcher_thread.start()

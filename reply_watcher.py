@@ -44,8 +44,10 @@ logger = get_logger("REPLY_WATCHER", "automation.log") # Default initially
 
 
 class ReplyWatcher:
-    def __init__(self, profile_name="IVYBOUND"):
+    def __init__(self, mailreef_client=None, config=None, profile_name="IVYBOUND"):
         self.profile_name = profile_name.upper()
+        self.config = config or automation_config
+        self.mailreef = mailreef_client or MailreefClient(api_key=MAILREEF_API_KEY)
         self.lock_name = f'watcher_{self.profile_name.lower()}'
         
         # Ensure only one instance runs per profile
@@ -105,6 +107,9 @@ class ReplyWatcher:
                 return
 
             all_inboxes = self.mailreef.get_inboxes()
+            # Sort by ID to ensure consistent indexing with Scheduler
+            all_inboxes.sort(key=lambda x: x['id'])
+            
             start, end = indices
             campaign_list = all_inboxes[start:end]
             
