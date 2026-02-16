@@ -100,6 +100,15 @@ def main():
             logger.critical(f"Failed to initialize scheduler (likely Sheets Auth error): {e}")
             return
         
+        # --- ZERO-DUPLICATE HYDRATION ---
+        try:
+            from suppression_manager import SuppressionManager
+            sm = SuppressionManager()
+            logger.info("📡 [NUCLEAR OPTION] Syncing suppression list from Google Sheets...")
+            sm.sync_from_sheets()
+        except Exception as e:
+            logger.error(f"⚠️ Failed to hydrate suppression list: {e}")
+        
         monitor = DeliverabilityMonitor(mailreef, cfg)
         
         # Validate setup

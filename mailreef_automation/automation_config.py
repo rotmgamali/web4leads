@@ -56,6 +56,9 @@ if not MAILREEF_API_KEY:
     load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
     MAILREEF_API_KEY = os.environ.get("MAILREEF_API_KEY")
 
+# ==================== SUPPRESSION ====================
+SUPPRESSION_SHEET_NAME = "Master Suppression List"
+
 # ==================== CAMPAIGN SETTINGS ====================
 CAMPAIGN_CONFIG = {
     "sequence_length": 2,  # 2-email sequence

@@ -334,13 +334,28 @@ class GoogleSheetsClient:
         """Get leads that haven't been contacted yet."""
         all_records = self._fetch_all_records()
         
-        pending = [
-            record for record in all_records 
-            if record.get('status', '').lower() in ['', 'pending']
-        ]
+        # --- NUCLEAR OPTION: HARD FILTER ---
+        # Double-check against suppression DB in case the sheet is out of sync
+        try:
+            from mailreef_automation.suppression_manager import SuppressionManager
+            sm = SuppressionManager()
+        except:
+            sm = None
+
+        pending = []
+        for record in all_records:
+            if record.get('status', '').lower() in ['', 'pending']:
+                email = record.get('email', '').lower().strip()
+                if sm and email and sm.is_suppressed(email):
+                    logger.warning(f"🚫 [HARD FILTER] Skipping suppressed lead found in pending list: {email}")
+                    continue
+                pending.append(record)
+            
+            if len(pending) >= limit:
+                break
         
         logger.info(f"Found {len(pending)} pending leads (returning up to {limit})")
-        return pending[:limit]
+        return pending
     
     def get_leads_for_followup(self, days_since_email_1: int = 3, 
                                sender_email: Optional[str] = None,

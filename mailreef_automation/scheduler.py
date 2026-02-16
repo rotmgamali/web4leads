@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from generators.email_generator import EmailGenerator
 from logger_util import get_logger
+from suppression_manager import SuppressionManager
 
 logger = get_logger("SCHEDULER")
 
@@ -63,6 +64,7 @@ class EmailScheduler:
         self._last_inbox_refresh = datetime.min
         self.INBOX_REFRESH_TTL = timedelta(minutes=60)
         
+        self.suppression = SuppressionManager()
         self.is_running = False
         
     def calculate_daily_send_requirements(self, day_type):
@@ -267,10 +269,14 @@ class EmailScheduler:
                 if inbox_email:
                     self._refresh_followup_cache_if_needed(inbox_email, inbox_id)
                     
-                    # Pop from follow-up cache
+                    # Pop from follow-up cache with suppression check
                     if self._followup_cache.get(inbox_id):
-                        selected = [self._followup_cache[inbox_id].pop(0)]
-                        return selected
+                        while self._followup_cache[inbox_id]:
+                            candidate = self._followup_cache[inbox_id].pop(0)
+                            if not self.suppression.is_suppressed(candidate.get('email')):
+                                return [candidate]
+                            self.logger.warning(f"🚫 [SELECTION] Skipping suppressed follow-up: {candidate.get('email')}")
+                        return []
                     return []
                 else:
                     self.logger.warning(f"Could not resolve email for inbox ID {inbox_id}")
@@ -283,13 +289,14 @@ class EmailScheduler:
         if sequence_stage == 1:
             self._refresh_cache_if_needed()
             
-            # Pop from cache
+            # Pop from cache with suppression check
             selected = []
-            for _ in range(count):
-                if self._lead_cache:
-                    selected.append(self._lead_cache.pop(0))
+            while len(selected) < count and self._lead_cache:
+                candidate = self._lead_cache.pop(0)
+                if not self.suppression.is_suppressed(candidate.get('email', '')):
+                    selected.append(candidate)
                 else:
-                    break
+                    self.logger.warning(f"🚫 [SELECTION] Skipping suppressed lead: {candidate.get('email')}")
             
             return selected
             
@@ -337,6 +344,11 @@ class EmailScheduler:
                 ]
                 self.logger.info("\n".join(log_msg))
                 
+                # --- NUCLEAR OPTION: LOCK-BEFORE-SEND ---
+                # Record in suppression BEFORE the API call.
+                # This ensures literal ZERO chance of retry if the API call hangs or crashes.
+                self.suppression.add_to_suppression(prospect["email"], self.profile_config.get("log_file", "unknown"))
+
                 response = self.mailreef.send_email(
                     inbox_id=inbox_id,
                     to_email=prospect["email"],
