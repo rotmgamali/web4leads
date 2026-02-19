@@ -111,7 +111,7 @@ CAMPAIGN_PROFILES = {
         "log_file": "web4guru_accountants.log",
         "templates_dir": "templates/web4guru/accountants", # Base dir for templates
         "reply_prompt": "prompts/web4guru_accountant_reply.txt",
-        "auto_reply_template": "b2b/general/email_2.txt"
+        # "auto_reply_template": "b2b/general/email_2.txt" # DISABLED by user request
     }
 }
 

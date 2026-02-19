@@ -489,28 +489,12 @@ Return ONLY one word: positive, negative, or neutral."""
                 self.telegram.send_message(alert_text)
                 logger.info(f"🚀 Telegram alert sent for {from_email}")
                 
-                # 5. AUTO-REPLY LOGIC
-                profile_config = automation_config.CAMPAIGN_PROFILES[self.profile_name]
-                if profile_config.get("auto_reply_template"):
-                    logger.info(f"🤖 [AUTO-REPLY] Attempting to auto-reply to {from_email}")
-                    # Need inbox_id. we have inbox_email from 'original_sender'
-                    inbox_email = reply.get('inbox_email')
-                    
-                    # Resolve Inbox ID from Email
-                    inbox_id = None
-                    if inbox_email:
-                        # Scan inboxes to find ID match (Optimization: Cache this map in init?)
-                        # For now, simplistic loop is fine for infrequent replies
-                        all_inboxes = self.mailreef.get_inboxes()
-                        for ibx in all_inboxes:
-                            if ibx.get('email') == inbox_email or ibx.get('address') == inbox_email:
-                                inbox_id = ibx.get('id')
-                                break
-                    
-                    if inbox_id:
-                        self.send_auto_reply(from_email, reply_data['thread_id'], inbox_id, subject)
-                    else:
-                        logger.error(f"Cannot auto-reply: Inbox ID not found for {inbox_email}")
+                # 5. AUTO-REPLY LOGIC (DISABLED)
+                # profile_config = automation_config.CAMPAIGN_PROFILES[self.profile_name]
+                # if profile_config.get("auto_reply_template"):
+                #     logger.info(f"🤖 [AUTO-REPLY] Attempting to auto-reply to {from_email}")
+                #     ... (Removed to prevent loops)
+                pass
         
         # Save state AFTER processing all
         new_state = state.copy()
@@ -519,57 +503,9 @@ Return ONLY one word: positive, negative, or neutral."""
                         
     def send_auto_reply(self, to_email: str, thread_id: str, inbox_id: str, original_subject: str):
         """Sends the follow-up pitch (Email 2) as an auto-reply."""
-        profile_config = automation_config.CAMPAIGN_PROFILES[self.profile_name]
-        template_file = profile_config.get("auto_reply_template")
-        
-        if not template_file:
-            return
-
-        base_tpl_dir = profile_config.get("templates_dir", "templates")
-        full_tpl_path = os.path.join(BASE_DIR, base_tpl_dir, template_file)
-        
-        if not os.path.exists(full_tpl_path):
-             logger.error(f"Auto-reply template not found at {full_tpl_path}")
-             return
-
-        try:
-            with open(full_tpl_path, 'r') as f:
-                body_template = f.read()
-                
-            # Get sender from inbox for consistency
-            try:
-                inbox_status = self.mailreef.get_inbox_status(inbox_id)
-                sender_name = inbox_status.get("sender_name", "Web4Guru Team")
-            except:
-                sender_name = "Web4Guru Team"
-            
-            # Prepare Subject
-            new_subject = original_subject
-            if not new_subject.lower().startswith("re:"):
-                new_subject = f"Re: {new_subject}"
-            
-            # Extract first name (naive)
-            # Try to grab from sheet if available? 
-            # self.sheets_client.input_sheet might have it but loading all records is expensive just for lookup
-            # Let's try to infer from name, or use "there"
-            # Actually, `send_email` is just a fire-and-forget.
-            # Let's use "there" for safety unless we really want it.
-            first_name = "there"
-            
-            body = body_template.replace("{{ first_name }}", first_name) \
-                                .replace("{{ sender_name }}", sender_name)
-            
-            logger.info(f"Sending auto-reply to {to_email} from {inbox_id}...")
-            res = self.mailreef.send_email(inbox_id, to_email, new_subject, body)
-            
-            if res.get("success"):
-                logger.info(f"✅ Auto-reply sent successfully to {to_email}")
-                self.telegram.send_message(f"🤖 *AUTO-REPLY SENT*\nTo: {to_email}\nFrom: {inbox_id}")
-            else:
-                 logger.error(f"❌ Auto-reply failed: {res.get('error')}")
-
-        except Exception as e:
-            logger.error(f"Error preparing auto-reply: {e}")
+        # DISABLED BY USER REQUEST
+        logger.warning(f"⛔ Auto-reply to {to_email} BLOCKED (Feature Disabled Globally).")
+        return
 
     def run_daemon(self):
         logger.info(f"Starting Reply Watcher daemon (every {CHECK_INTERVAL_MINUTES}m)")
