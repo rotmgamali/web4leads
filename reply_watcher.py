@@ -396,7 +396,26 @@ Return ONLY one word: positive, negative, or neutral."""
             subject = reply.get('subject', '')
             reply_date_str = reply.get('date')
             
-            logger.info(f"📩 Processing reply from {from_email}...")
+            # 1. Deduplication (CRITICAL FIX)
+            # Parse reply date
+            reply_dt = None
+            if reply_date_str:
+                try:
+                    reply_dt = datetime.fromisoformat(reply_date_str.replace('Z', '+00:00'))
+                    # Ensure timezone awareness compatibility
+                    if reply_dt.tzinfo is None:
+                        reply_dt = reply_dt.replace(tzinfo=last_check_dt.tzinfo)
+                    if last_check_dt.tzinfo is None:
+                         last_check_dt = last_check_dt.replace(tzinfo=reply_dt.tzinfo)
+                except Exception as e:
+                    logger.warning(f"Date parse error for {from_email}: {e}")
+
+            # SKIP if we've already processed this time range
+            if reply_dt and reply_dt <= last_check_dt:
+                logger.debug(f"⏭️ [SKIP] Already processed reply from {from_email} (Date: {reply_dt} <= {last_check_dt})")
+                continue
+
+            logger.info(f"📩 Processing NEW reply from {from_email} (Date: {reply_dt})...")
             
             # 2. Sentiment Analysis
             sentiment = self.analyze_sentiment(body)
@@ -415,16 +434,10 @@ Return ONLY one word: positive, negative, or neutral."""
             try:
                 self.sheets_client.log_reply(reply_data)
                 
-                # Update latest successful timestamp
-                if reply_date_str:
-                    try:
-                        reply_dt = datetime.fromisoformat(reply_date_str.replace('Z', '+00:00'))
-                        # Remove timezone info for comparison with last_check_dt if needed
-                        reply_dt = reply_dt.replace(tzinfo=None)
-                        if reply_dt > latest_successful_dt:
-                            latest_successful_dt = reply_dt
-                    except Exception as te:
-                        logger.error(f"Time parse error: {te}")
+                # Update latest successful timestamp for the high-water mark
+                if reply_dt and reply_dt > latest_successful_dt:
+                    latest_successful_dt = reply_dt
+                    
             except Exception as e:
                 logger.error(f"❌ Failed to log to sheets: {e}")
                 
@@ -441,10 +454,27 @@ Return ONLY one word: positive, negative, or neutral."""
                     logger.info(f"🤖 [AUTO-REPLY] Attempting to auto-reply to {from_email}")
                     # Need inbox_id. we have inbox_email from 'original_sender'
                     inbox_email = reply.get('inbox_email')
-                    if inbox_email and '@' in inbox_email:
-                        self.send_auto_reply(from_email, reply_data['thread_id'], inbox_email, subject)
+                    
+                    # Resolve Inbox ID from Email
+                    inbox_id = None
+                    if inbox_email:
+                        # Scan inboxes to find ID match (Optimization: Cache this map in init?)
+                        # For now, simplistic loop is fine for infrequent replies
+                        all_inboxes = self.mailreef.get_inboxes()
+                        for ibx in all_inboxes:
+                            if ibx.get('email') == inbox_email or ibx.get('address') == inbox_email:
+                                inbox_id = ibx.get('id')
+                                break
+                    
+                    if inbox_id:
+                        self.send_auto_reply(from_email, reply_data['thread_id'], inbox_id, subject)
                     else:
-                        logger.error(f"Cannot auto-reply: Inbox email not found in reply data")
+                        logger.error(f"Cannot auto-reply: Inbox ID not found for {inbox_email}")
+        
+        # Save state AFTER processing all
+        new_state = state.copy()
+        new_state["last_check"] = latest_successful_dt.isoformat()
+        self.save_state(new_state)
                         
     def send_auto_reply(self, to_email: str, thread_id: str, inbox_id: str, original_subject: str):
         """Sends the follow-up pitch (Email 2) as an auto-reply."""
