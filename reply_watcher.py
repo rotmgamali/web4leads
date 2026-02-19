@@ -368,6 +368,39 @@ Return ONLY one word: positive, negative, or neutral."""
         except Exception as e:
             logger.error(f"Error preparing auto-reply: {e}")
 
+    def is_auto_reply(self, subject: str, body: str) -> bool:
+        """Detects if a message is an automated response."""
+        subject = subject.lower()
+        body = body.lower()
+        
+        # 1. Subject Keywords
+        auto_keywords = [
+            "auto-reply", "automatic reply", "automated reply", "auto response",
+            "out of office", "ooo", "vacation", "away from",
+            "we received your email", "recibimos su correo", "recibimos su mensaje",
+            "delivery status notification", "undeliverable", "returned mail",
+            "thank you for your email", "thanks for reaching out", "message received"
+        ]
+        
+        for kw in auto_keywords:
+            if kw in subject:
+                logger.info(f"🤖 [AUTO-DETECT] Detected auto-reply by subject: '{kw}'")
+                return True
+                
+        # 2. Body Keywords (First 200 chars usually sufficient)
+        snippet = body[:300]
+        body_keywords = [
+             "this is an automated message", "please do not reply", 
+             "generate an auto-reply", "we received your email",
+             "recibimos su correo"
+        ]
+        for kw in body_keywords:
+            if kw in snippet:
+                logger.info(f"🤖 [AUTO-DETECT] Detected auto-reply by body: '{kw}'")
+                return True
+                
+        return False
+
     def process_replies(self):
         state = self.load_state()
         last_check_str = state.get("last_check")
@@ -417,9 +450,17 @@ Return ONLY one word: positive, negative, or neutral."""
 
             logger.info(f"📩 Processing NEW reply from {from_email} (Date: {reply_dt})...")
             
-            # 2. Sentiment Analysis
-            sentiment = self.analyze_sentiment(body)
-            logger.info(f"Sentiment for {from_email}: {sentiment}")
+            # 1.5 CHECK FOR AUTO-REPLIES (Prevent Loops)
+            if self.is_auto_reply(subject, body):
+                logger.info(f"⛔ [SKIP] Ignoring auto-reply from {from_email}")
+                # We log it as 'Auto-Reply' sentiment but DO NOT trigger alerts or responses
+                # Actually, maybe we just skip processing entirely? 
+                # Better to log it so we know it happened, but suppress actions.
+                sentiment = 'auto-reply'
+            else:
+                # 2. Sentiment Analysis
+                sentiment = self.analyze_sentiment(body)
+                logger.info(f"Sentiment for {from_email}: {sentiment}")
             
             # 3. Log to Google Sheets
             reply_data = {
