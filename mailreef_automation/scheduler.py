@@ -11,6 +11,7 @@ from apscheduler.triggers.cron import CronTrigger
 import pytz
 import sys
 import os
+import threading
 
 # Add project root to path to ensure generators/scrapers can be imported
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -63,6 +64,9 @@ class EmailScheduler:
         self.inbox_map = {} 
         self._last_inbox_refresh = datetime.min
         self.INBOX_REFRESH_TTL = timedelta(minutes=60)
+        
+        # Concurrency Lock
+        self._cache_lock = threading.Lock()
         
         self.suppression = SuppressionManager()
         self.is_running = False
@@ -192,22 +196,23 @@ class EmailScheduler:
     
     def _refresh_cache_if_needed(self):
         """Refresh local lead cache if expired or empty"""
-        now = datetime.now()
-        if not self._lead_cache or (now - self._last_cache_update) > self.CACHE_TTL:
-            self.logger.info("🔄 Refreshing Stage 1 lead cache...")
-            try:
-                # Use sheets_integration's fetch_all_records (which is also cached)
-                new_batch = self.sheets.get_pending_leads(limit=50) 
-                
-                if new_batch:
-                    self._lead_cache = new_batch
-                    self._last_cache_update = now
-                    self.logger.info(f"✅ Cached {len(new_batch)} fresh Stage 1 leads.")
-                else:
-                    self.logger.warning("⚠️ No pending Stage 1 leads found!")
-            except Exception as e:
-                # Log only the first line of the error to avoid 429 flood noise
-                self.logger.error(f"❌ Lead cache refresh failed: {str(e).splitlines()[0]}")
+        with self._cache_lock:
+            now = datetime.now()
+            if not self._lead_cache or (now - self._last_cache_update) > self.CACHE_TTL:
+                self.logger.info("🔄 Refreshing Stage 1 lead cache...")
+                try:
+                    # Use sheets_integration's fetch_all_records (which is also cached)
+                    new_batch = self.sheets.get_pending_leads(limit=50) 
+                    
+                    if new_batch:
+                        self._lead_cache = new_batch
+                        self._last_cache_update = now
+                        self.logger.info(f"✅ Cached {len(new_batch)} fresh Stage 1 leads.")
+                    else:
+                        self.logger.warning("⚠️ No pending Stage 1 leads found!")
+                except Exception as e:
+                    # Log only the first line of the error to avoid 429 flood noise
+                    self.logger.error(f"❌ Lead cache refresh failed: {str(e).splitlines()[0]}")
 
     def _refresh_followup_cache_if_needed(self, sender_email, inbox_id):
         """Refresh local follow-up cache for a specific sender"""
@@ -291,12 +296,13 @@ class EmailScheduler:
             
             # Pop from cache with suppression check
             selected = []
-            while len(selected) < count and self._lead_cache:
-                candidate = self._lead_cache.pop(0)
-                if not self.suppression.is_suppressed(candidate.get('email', '')):
-                    selected.append(candidate)
-                else:
-                    self.logger.warning(f"🚫 [SELECTION] Skipping suppressed lead: {candidate.get('email')}")
+            with self._cache_lock:
+                while len(selected) < count and self._lead_cache:
+                    candidate = self._lead_cache.pop(0)
+                    if not self.suppression.is_suppressed(candidate.get('email', '')):
+                        selected.append(candidate)
+                    else:
+                        self.logger.warning(f"🚫 [SELECTION] Skipping suppressed lead: {candidate.get('email')}")
             
             return selected
             

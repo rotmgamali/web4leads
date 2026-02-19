@@ -486,6 +486,16 @@ class GoogleSheetsClient:
             worksheet.update_cells(cell_list)
             logger.info(f"✓ Updated status for {email} (Row {row}) to {status}")
             
+            # --- CRITICAL BUG FIX (DUPLICATE EMAILS) ---
+            # Even on success, we MUST update the local memory cache immediately.
+            # Otherwise, get_pending_leads will continue returning this email as "pending"
+            # for up to 5 minutes until the global records cache expires.
+            if email in self._cache:
+                self._cache[email].update({
+                    'status': status,
+                    'sender_email': sender_email or self._cache[email].get('sender_email')
+                })
+                
         except Exception as e:
             logger.error(f"Failed to update lead status for {email}: {e}")
             
