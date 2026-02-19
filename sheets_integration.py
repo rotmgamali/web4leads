@@ -274,13 +274,14 @@ class GoogleSheetsClient:
             "first_name",
             "last_name",
             "role",
-            "school_name",
-            "school_type",
+            "business_name",
+            "business_type",
             "domain",
             "state",
             "city",
             "phone",
             "status",           # pending, email_1_sent, email_2_sent, replied, bounced
+            "email_verified",   # verified, invalid, unchecked
             "email_1_sent_at",
             "email_2_sent_at",
             "sender_email",
@@ -330,8 +331,8 @@ class GoogleSheetsClient:
         
         logger.info("✓ Set up replies sheet headers")
     
-    def get_pending_leads(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Get leads that haven't been contacted yet."""
+    def get_pending_leads(self, limit: int = 100, min_row: int = 0) -> List[Dict[str, Any]]:
+        """Get leads that haven't been contacted yet, optionally starting from a specific row."""
         all_records = self._fetch_all_records()
         
         # --- NUCLEAR OPTION: HARD FILTER ---
@@ -342,19 +343,49 @@ class GoogleSheetsClient:
         except:
             sm = None
 
-        pending = []
+        # --- GLOBAL STATUS CHECK (CRITICAL FOR DUPLICATES) ---
+        # If ANY row for an email is 'replied', 'bounced', etc., do NOT send to any other row for that email.
+        terminal_statuses = {'replied', 'bounced', 'unsubscribed', 'opt_out', 'do_not_contact'}
+        globally_suppressed_emails = set()
+        
         for record in all_records:
+            status = str(record.get('status', '')).lower().strip()
+            email = str(record.get('email', '')).lower().strip()
+            if status in terminal_statuses:
+                globally_suppressed_emails.add(email)
+
+        pending = []
+        seen_emails = set()
+        
+        for record in all_records:
+            # Row Filter
+            if min_row > 0 and record.get('_row', 0) < min_row:
+                continue
+
             if record.get('status', '').lower() in ['', 'pending']:
                 email = record.get('email', '').lower().strip()
+                
+                # In-Memory Deduplication (prevent picking up duplicates in same run)
+                if email in seen_emails:
+                    logger.debug(f"Skipping duplicate email in pending list: {email}")
+                    continue
+                
+                # Global Status Check
+                if email in globally_suppressed_emails:
+                    logger.warning(f"🚫 [GLOBAL FILTER] Skipping {email} because another row has status 'replied/bounced'")
+                    continue
+
                 if sm and email and sm.is_suppressed(email):
                     logger.warning(f"🚫 [HARD FILTER] Skipping suppressed lead found in pending list: {email}")
                     continue
+                
                 pending.append(record)
+                seen_emails.add(email)
             
             if len(pending) >= limit:
                 break
         
-        logger.info(f"Found {len(pending)} pending leads (returning up to {limit})")
+        logger.info(f"Found {len(pending)} pending leads (Limit: {limit}, Min Row: {min_row})")
         return pending
     
     def get_leads_for_followup(self, days_since_email_1: int = 3, 
@@ -391,24 +422,34 @@ class GoogleSheetsClient:
     @retry_on_quota
     def update_lead_status(self, email: str, status: str, 
                            sent_at: Optional[datetime] = None,
-                           sender_email: Optional[str] = None):
+                           sender_email: Optional[str] = None,
+                           row: Optional[int] = None):
         """Update a lead's status after sending an email."""
         worksheet = self.input_sheet.sheet1
         
-        # Find the row with this email
+        # Priority: Use explicit Row if provided (Fixes duplicate email bug)
+        if row and row > 1:
+            pass # We have the row
+        else:
+            # Fallback to search
+            # Find the row with this email
+            try:
+                # Check cache for row if possible
+                cached_record = self._cache.get(email)
+                if cached_record and cached_record.get('_row'):
+                    row = cached_record['_row']
+                else:
+                    # Fallback to search if not in cache (should be rare)
+                    cell = worksheet.find(email)
+                    if not cell:
+                        logger.warning(f"Lead not found in sheet: {email}")
+                        return
+                    row = cell.row
+            except Exception as e:
+                 logger.error(f"Error finding row for {email}: {e}")
+                 return
+
         try:
-            # Check cache for row if possible
-            cached_record = self._cache.get(email)
-            if cached_record and cached_record.get('_row'):
-                row = cached_record['_row']
-            else:
-                # Fallback to search if not in cache (should be rare)
-                cell = worksheet.find(email)
-                if not cell:
-                    logger.warning(f"Lead not found in sheet: {email}")
-                    return
-                row = cell.row
-            
             # Get column indices (Use a small cache for headers too)
             if not hasattr(self, '_headers_cache') or not self._headers_cache:
                 self._headers_cache = worksheet.row_values(1)
@@ -443,6 +484,10 @@ class GoogleSheetsClient:
                     pass # sender_email column might not exist
             # Perform Batch Update
             worksheet.update_cells(cell_list)
+            logger.info(f"✓ Updated status for {email} (Row {row}) to {status}")
+            
+        except Exception as e:
+            logger.error(f"Failed to update lead status for {email}: {e}")
             
             # Invalidate local cache for this email
             if email in self._cache:
@@ -467,6 +512,63 @@ class GoogleSheetsClient:
             
             logger.error(f"Error updating status for {email}: {e}")
     
+    @retry_on_quota
+    def add_lead(self, lead_data: Dict[str, Any]) -> bool:
+        """
+        Add a new lead to the input sheet.
+        Checks for duplicates based on email or domain/phone within the cache if possible.
+        """
+        try:
+            worksheet = self.input_sheet.sheet1
+            
+            # 1. basic deduplication check against local cache
+            # (Note: cache might not be 100% up to date if we don't fetch often, 
+            # but it catches immediate duplicates in a loop)
+            email = lead_data.get('email', '').lower().strip()
+            domain = lead_data.get('domain', '').lower().strip()
+            
+            if email and email in self._cache:
+                logger.info(f"Skipping duplicate email: {email}")
+                return False
+
+            # 2. Prepare Row
+            # Headers: email, first_name, last_name, role, business_name, business_type, domain, state, city, phone, status, email_verified, ...
+            
+            row = [
+                email,
+                lead_data.get('first_name', ''),
+                lead_data.get('last_name', ''),
+                lead_data.get('role', ''),
+                lead_data.get('business_name', ''),
+                lead_data.get('business_type', 'Business'),
+                domain,
+                lead_data.get('state', ''),
+                lead_data.get('city', ''),
+                lead_data.get('phone', ''),
+                lead_data.get('status', 'pending'),
+                lead_data.get('email_verified', 'unchecked'),
+                "", # email_1_sent_at
+                "", # email_2_sent_at
+                "", # sender_email
+                lead_data.get('notes', ''),
+                lead_data.get('custom_data', '')
+            ]
+            
+            worksheet.append_row(row)
+            
+            # Update cache
+            if email:
+                new_record = lead_data.copy()
+                new_record['_row'] = -1 # Unknown row until refresh, but exists
+                self._cache[email] = new_record
+                
+            logger.info(f"✓ Added lead: {lead_data.get('business_name')} ({email})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to add lead: {e}")
+            return False
+
     @retry_on_quota
     def log_reply(self, reply_data: Dict[str, Any]):
         """Log a reply to the replies sheet, auto-enriching with lead data if possible."""

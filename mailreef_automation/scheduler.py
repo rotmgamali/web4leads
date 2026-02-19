@@ -372,7 +372,8 @@ class EmailScheduler:
                     email=prospect["email"],
                     status=status,
                     sent_at=datetime.now(),
-                    sender_email=sender_email
+                    sender_email=sender_email,
+                    row=prospect.get('_row') # CRITICAL FIX: Pass exact row to prevent duplicate loop
                 )
                 
                 results.append({

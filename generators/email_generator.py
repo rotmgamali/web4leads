@@ -333,7 +333,7 @@ class EmailGenerator:
         draft_body = template_content
         
         # Strategy: Pre-fill ALL known variables in the template so the LLM sees clean text.
-        school_name = lead_data.get("school_name") or lead_data.get("company_name") or "your company"
+        school_name = lead_data.get("school_name") or lead_data.get("company_name") or lead_data.get("business_name") or "your firm"
         school_type = lead_data.get("school_type", "private").lower()
         
         replacements = {
@@ -386,10 +386,10 @@ class EmailGenerator:
         }
         
         # --- 5. System Prompt (Constraint) ---
-        system_prompt = f"""You are {sender_name}, a helpful consultant.
+        system_prompt = f"""You are {sender_name}, a growth partner for accountants.
         
 STYLE GUIDE:
-- Tone: Human, warm, brief, and professional.
+- Tone: Hyper-personalized, casual (use "Business Name" -> "Business" logic where appropriate), and direct.
 - Formatting: Use paragraphs only.
 - Absolute Rules:
   1. DO NOT include a greeting (e.g. "Hi...").
@@ -397,18 +397,16 @@ STYLE GUIDE:
   3. OUTPUT ONLY the Subject and the Body paragraphs.
 
 CONTEXT:
-This is a {school_type} school.
-- IF PUBLIC: Focus on district alignment, budget efficiency, and improving standardized test scores.
-- IF PRIVATE: Focus on enrollment, prestige, and college matriculation.
+You are pitching a service that sends 3,000+ emails per day to businesses to get accountants more clients.
+KEY VALUE PROPS:
+1. Volume: 3,000 emails/day.
+2. Proof: Mention a case study of a client getting 10 video calls in their first 2 weeks.
+3. Offer: Free Trial to prove value.
 """
 
         # --- 6. User Prompt (Body Generation) ---
-        user_prompt = f"""Here is the CORE CONTENT of an email I want to send to {first_name} ({lead_data.get('role')}) at {school_name}.
-
-DRAFT CONTENT:
-'''
-{clean_draft}
-'''
+        user_prompt = f"""Here is the RECIPIENT: {first_name} ({lead_data.get('role')}) at {school_name}.
+LOCATION: {lead_data.get('city')}, {lead_data.get('state')}
 
 LEAD CONTEXT (Use this to personalize!):
 {custom_context}
@@ -417,13 +415,21 @@ RESEARCH HIGHLIGHTS (Web Scrape):
 {website_content[:3000]}
 
 TASK:
-Rewrite the DRAFT CONTENT to make it feel personal and handwritten.
-- Use the LEAD CONTEXT (Founded year, specific description, city, etc.) to show you've done your homework.
-- REPUTATION GUIDELINE: If mentioned, be positive or supportive. Never be critical of their reviews; instead, mention how much you appreciate their commitment to the community.
+Write a cold email to this accountant.
+- CRITICAL: You MUST mention their city ({lead_data.get('city')}) in the first sentence (e.g. "hope things are good in [City]").
+- CRITICAL: Find ONE specific detail from the RESEARCH HIGHLIGHTS (e.g. a specific service, their mission, or founding year) and mention it to prove you've done your homework. Connect this to the pitch.
+- CRITICAL: Pitch the system: "Imagine if AI could do client research for you and write hyper-personalized emails to over 3,000 potential clients every single day."
+- CRITICAL: Update the pitch to say "Imagine if AI could do similar deep research for you..." to connect the two points.
+- CRITICAL: Mention the case study: "One client got 10 video calls in the first 2 weeks."
+- CRITICAL: Close with this EXACT offer: "In order to gain your business my team can offer this service for you for 1 week on our own dime to show you the value that this service can bring."
+- SHORTEN the business name if it's long.
+- WARNING: Do NOT say you work at {school_name}. You work at Web4Guru helping them.
+- CRITICAL: NEVER use placeholders like [Business], [Company], or [Firm]. If the company name is unknown, use "your firm" or "your practice".
+
 - write ONLY the body paragraphs. 
 - NO GREETINGS (Hi..., Good morning...).
 - NO SIGN-OFFS (Best..., Andrew...).
-- Keep it under 100 words.
+- Keep it under 150 words.
 
 Output format:
 SUBJECT: [Personalized Subject]
@@ -437,8 +443,9 @@ BODY: [Paragraph 1]
         lines = body_text.split("\n")
         
         # 1. Strip Leading Greeting
-        if lines and any(g.lower() in lines[0].lower() for g in ["hi", "dear", "good morning", "good afternoon", "good evening", "hello"]):
-            if "," in lines[0]:
+        # Fix: Use startswith to avoid matching "hi" in "things" or "this"
+        if lines and any(lines[0].lower().startswith(g) for g in ["hi", "dear", "good morning", "good afternoon", "good evening", "hello"]):
+            if "," in lines[0] or len(lines[0]) < 30: # If it's short or has comma, it's likely a greeting
                 lines = lines[1:]
                 
         # 2. Strip Trailing Sign-off
@@ -494,7 +501,7 @@ BODY: [Paragraph 1]
             messages.append({"role": "user", "content": prompt})
 
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 messages=messages,
                 temperature=0.7
             )
