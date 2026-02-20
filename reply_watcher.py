@@ -234,6 +234,16 @@ class ReplyWatcher:
                     from_email = str(msg.get("from_email", "")).lower().strip()
                     subject = msg.get("subject_line", "")
                     
+                    ts = msg.get("ts")
+                    if not ts:
+                        continue
+                        
+                    # ts is unix timestamp
+                    msg_dt = datetime.fromtimestamp(ts)
+                    # Filter by date FIRST to prevent spamming logs with historical matches
+                    if msg_dt <= since_dt:
+                        continue
+                    
                     # FILTER: Skip warmup emails
                     if self.is_warmup(from_email, subject):
                         continue
@@ -244,26 +254,21 @@ class ReplyWatcher:
                         # logger.debug(f"⏭️ [SKIP] Message for {to_email} does not belong to {self.profile_name}")
                         continue
 
-                    ts = msg.get("ts")
-                    if ts:
-                        # ts is unix timestamp
-                        msg_dt = datetime.fromtimestamp(ts)
-                        if msg_dt > since_dt:
-                            # Normalize keys for the rest of the script
-                            msg["from_email"] = msg.get("from_email")
-                            # 1. Try body_text (full), 2. Try body_html (stripped), 3. Snippet
-                            body_text = msg.get("body_text")
-                            if not body_text and msg.get("body_html"):
-                                import re
-                                body_text = re.sub('<[^<]+?>', '', msg.get("body_html"))
-                                
-                            msg["body"] = body_text if body_text else msg.get("snippet_preview", "")
-                            msg["subject"] = subject
-                            msg["date"] = msg_dt.isoformat()
-                            # Extra context
-                            msg["inbox_email"] = msg.get("to")[0] if msg.get("to") else "unknown"
-                            
-                            replies.append(msg)
+                    # Normalize keys for the rest of the script
+                    msg["from_email"] = msg.get("from_email")
+                    # 1. Try body_text (full), 2. Try body_html (stripped), 3. Snippet
+                    body_text = msg.get("body_text")
+                    if not body_text and msg.get("body_html"):
+                        import re
+                        body_text = re.sub('<[^<]+?>', '', msg.get("body_html"))
+                        
+                    msg["body"] = body_text if body_text else msg.get("snippet_preview", "")
+                    msg["subject"] = subject
+                    msg["date"] = msg_dt.isoformat()
+                    # Extra context
+                    msg["inbox_email"] = msg.get("to")[0] if msg.get("to") else "unknown"
+                    
+                    replies.append(msg)
                             
         except Exception as e:
             logger.error(f"Error in global reply fetch: {e}")
