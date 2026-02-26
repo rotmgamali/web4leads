@@ -1,12 +1,14 @@
-Subject: Question for {{ company_name }}
+Subject: I want to get {{ company_name }} 5 new clients
 
 {{ greeting }}
 
-I've been looking into {{ company_name }} and noticed [Personalized Detail].
+[Open with a genuine, specific detail from their website — their specialties, reputation, years in business, or something unique about their practice]
 
-I wanted to ask - are you currently taking on new clients this quarter?
+I actually had an idea specifically for {{ company_name }} — my team specializes in getting accounting firms like yours in front of local business owners who are actively looking for help with their books, taxes, or payroll. We do all the heavy lifting.
 
-Also, curious if you're using any AI tools to help with client acquisition yet?
+To give you an idea of what this looks like: we recently helped a firm in Texas book 10 qualified prospect calls in their first 2 weeks — and 3 of those converted into retainer clients within the month.
+
+I'd love to do a free trial for {{ company_name }} to prove it works before you spend a dime. Would you be open to a quick 5-minute call so I can show you exactly how we'd do it for your firm?
 
 Best,
 Andrew

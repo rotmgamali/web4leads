@@ -1,12 +1,14 @@
-Subject: Re: Question for {{ company_name }}
+Subject: Re: I want to get {{ company_name }} 5 new clients
 
 {{ greeting }}
 
-I wanted to circle back on this. We recently helped a firm similar to {{ company_name }} add 5 high value clients in their first month using our AI-driven system—without spending hours on manual outreach.
+Just circling back quickly — I know tax season keeps things busy.
 
-Our approach builds trust by starting real conversations with decision-makers who actually need your services.
+The offer still stands: my team will find business owners in {{ city }} who need an accountant and start warm conversations with them on {{ company_name }}'s behalf. The last firm we did this for went from zero inbound leads to 10 qualified calls in 14 days — 3 became paying clients.
 
-I’d love to show you the case study and see if we could replicate those results for you. Would you be open to a 5-minute call this week?
+We'll do the first week completely free. No contracts, no setup fees. If it doesn't deliver, you lose nothing.
+
+Would it be alright if I called you this week to walk through the setup? Takes less than 5 minutes.
 
 Best,
 Andrew

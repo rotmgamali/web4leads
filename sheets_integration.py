@@ -626,7 +626,9 @@ class GoogleSheetsClient:
                     known_fragments = ["quick question", "supporting families", "boosting enrollment", 
                                        "academic outcomes", "differentiation", "merit scholarship",
                                        "college readiness", "student-athletes", "test prep", 
-                                       "enhancing value", "enrollment value"]
+                                       "enhancing value", "enrollment value",
+                                       "i want to get", "5 new clients", "new clients",
+                                       "had an idea for you", "idea for", "thought about"]
                     
                     if any(frag in clean_subject for frag in known_fragments):
                         # Find leads who were contacted TODAY or have a suspicious status

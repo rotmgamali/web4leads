@@ -76,7 +76,7 @@ class SuppressionManager:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT OR IGNORE INTO suppressed_emails (email, campaign) VALUES (?, ?)",
+                "INSERT OR REPLACE INTO suppressed_emails (email, campaign, added_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
                 (email, campaign)
             )
             conn.commit()
@@ -84,6 +84,47 @@ class SuppressionManager:
             # logger.debug(f"🔇 Added {email} to suppression list.")
         except Exception as e:
             logger.error(f"Error adding {email} to suppression: {e}")
+
+    def acquire_lock(self, email: str, campaign: Optional[str] = "LOCK_PROCESSING") -> bool:
+        """Atomically locks the email for processing. Returns True if successful, False if already locked/suppressed."""
+        if not email:
+            return False
+            
+        email = email.lower().strip()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            # Use immediate transaction for atomic lock
+            conn.isolation_level = 'IMMEDIATE'
+            cursor = conn.cursor()
+            # No OR IGNORE - we want the IntegrityError if it's already processing/suppressed
+            cursor.execute(
+                "INSERT INTO suppressed_emails (email, campaign) VALUES (?, ?)",
+                (email, campaign)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.IntegrityError:
+            # Already locked or suppressed
+            return False
+        except Exception as e:
+            logger.error(f"Error acquiring lock for {email}: {e}")
+            return False
+            
+    def release_lock(self, email: str):
+        """Releases a processing lock if email generation fails."""
+        if not email:
+            return
+            
+        email = email.lower().strip()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM suppressed_emails WHERE email = ? AND campaign = 'LOCK_PROCESSING'", (email,))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Error releasing lock for {email}: {e}")
 
     def bulk_add(self, emails: list, campaign: Optional[str] = None):
         """Add multiple emails at once for efficiency during backfill."""

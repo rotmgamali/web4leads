@@ -10,3 +10,7 @@ google-auth
 google-auth-oauthlib
 python-dotenv
 httpx
+playwright
+nest_asyncio
+python-telegram-bot
+dateparser

@@ -61,7 +61,7 @@ SUPPRESSION_SHEET_NAME = "Master Suppression List"
 
 # ==================== CAMPAIGN SETTINGS ====================
 CAMPAIGN_CONFIG = {
-    "sequence_length": 2,  # 2-email sequence
+    "sequence_length": 1,  # Single email campaign
     "days_between_sequence": 4,  # Day 0, Day 4
     "max_retries": 3,
     "retry_delay_hours": 24,
@@ -107,7 +107,7 @@ CAMPAIGN_PROFILES = {
         "replies_sheet": "Web4Guru Accountants - Reply Tracking",
         "send_window_group": "default", # Same window as others
         "campaign_type": "b2b",
-        "inbox_indices": (0, 95), # Uses the 95 errorskin inboxes (verified 0-95)
+        "inbox_indices": (95, 190), # Moved to birdsgeese inboxes (95-190)
         "log_file": "web4guru_accountants.log",
         "templates_dir": "templates/web4guru/accountants", # Base dir for templates
         "reply_prompt": "prompts/web4guru_accountant_reply.txt",
