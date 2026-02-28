@@ -267,6 +267,7 @@ class ReplyWatcher:
                     msg["date"] = msg_dt.isoformat()
                     # Extra context
                     msg["inbox_email"] = msg.get("to")[0] if msg.get("to") else "unknown"
+                    msg["message_id"] = msg.get("id") or msg.get("message_id")
                     
                     replies.append(msg)
                             
@@ -488,18 +489,33 @@ Return ONLY one word: positive, negative, or neutral."""
                 logger.error(f"❌ Failed to log to sheets: {e}")
                 
             
-            # 4. Telegram Alert for Positive Sentiment
-            if sentiment == 'positive':
-                alert_text = f"🔥 *HOT LEAD REPLY*\n\n*From:* {from_email}\n*Subject:* {subject}\n\n*Snippet:*\n`{body[:300]}...`"
-                self.telegram.send_message(alert_text)
-                logger.info(f"🚀 Telegram alert sent for {from_email}")
-                
-                # 5. AUTO-REPLY LOGIC (DISABLED)
-                # profile_config = automation_config.CAMPAIGN_PROFILES[self.profile_name]
-                # if profile_config.get("auto_reply_template"):
-                #     logger.info(f"🤖 [AUTO-REPLY] Attempting to auto-reply to {from_email}")
-                #     ... (Removed to prevent loops)
-                pass
+        # 4. Telegram Alert for Positive Sentiment
+        if sentiment == 'positive':
+            alert_text = f"🔥 *HOT LEAD REPLY*\n\n*From:* {from_email}\n*Subject:* {subject}\n\n*Snippet:*\n`{body[:300]}...`"
+            self.telegram.send_message(alert_text)
+            logger.info(f"🚀 Telegram alert sent for {from_email}")
+            
+        # 5. Forward all non-auto-reply genuine responses
+        msg_id = reply.get('message_id')
+        if msg_id:
+            forward_targets = ["cja@ivybound.net", "andrew@web4guru.com"]
+            for target in forward_targets:
+                try:
+                    logger.info(f"↪️ Forwarding reply from {from_email} to {target}...")
+                    res = self.mailreef.forward_email(msg_id, target)
+                    if res.get('error'):
+                        logger.error(f"⚠️ Mailreef API forward error for {target}: {res.get('error')}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to forward to {target}: {e}")
+        else:
+            logger.warning(f"⚠️ Cannot forward reply from {from_email}: Missing message_id from Mailreef API.")
+        
+        # 6. AUTO-REPLY LOGIC (DISABLED)
+        # profile_config = automation_config.CAMPAIGN_PROFILES[self.profile_name]
+        # if profile_config.get("auto_reply_template"):
+        #     logger.info(f"🤖 [AUTO-REPLY] Attempting to auto-reply to {from_email}")
+        #     ... (Removed to prevent loops)
+        pass
         
         # Save state AFTER processing all
         new_state = state.copy()
