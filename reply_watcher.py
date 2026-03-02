@@ -408,6 +408,9 @@ Return ONLY one word: positive, negative, or neutral."""
         return False
 
     def process_replies(self):
+        logger.info("🛑 Reply Tracker is currently DISABLED via emergency kill switch.")
+        return
+
         state = self.load_state()
         last_check_str = state.get("last_check")
         
